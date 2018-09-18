@@ -6,6 +6,7 @@ add_compile_options(-std=c++11)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -mtune=native")
 #set(CMAKE_REQUIRED_FLAGS "-msse2") 
 include(cmake/${PROJECT_NAME}.cmake)
+include(cmake/FindTooN.cmake)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -105,7 +106,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES rebvio
 #  CATKIN_DEPENDS other_catkin_pkg
-  DEPENDS OpenCV Eigen3
+  DEPENDS OpenCV EIGEN3 TooN
   CFG_EXTRAS ${PROJECT_NAME}.cmake
 )
 
@@ -120,6 +121,7 @@ include_directories(
  ${catkin_INCLUDE_DIRS}
  ${OpenCV_INCLUDE_DIRS}
  ${Eigen3_INCLUDE_DIRS}
+ ${TooN_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
