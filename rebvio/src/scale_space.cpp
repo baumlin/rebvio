@@ -378,20 +378,6 @@ ScaleSpace::ScaleSpace() :
 		camera_(Camera()),
 		filter_{rebvio::FastGaussian(camera_,3.56359,3),rebvio::FastGaussian(camera_,filter_[0].sigma_true_*1.2599,3)}
 {
-	std::vector<cl::Platform> platforms;
-	cl::Platform::get(&platforms);
-	if (platforms.size() == 0) {
-		std::cout << "Platform size 0\n";
-		return;
-	}
-
-	// Print number of platforms and list of platforms
-	std::cout << "Platform number is: " << platforms.size() << std::endl;
-	std::string platformVendor;
-	for (unsigned int i = 0; i < platforms.size(); ++i) {
-		platforms[i].getInfo((cl_platform_info)CL_PLATFORM_VENDOR, &platformVendor);
-		std::cout << "Platform is by: " << platformVendor << std::endl;
-	}
 		dog_ = cv::Mat(camera_.rows_,camera_.cols_,CV_32FC1,cv::Scalar(0));
 		gradient_mag_ = cv::Mat(camera_.rows_,camera_.cols_,CV_32FC1,cv::Scalar(0));
 }

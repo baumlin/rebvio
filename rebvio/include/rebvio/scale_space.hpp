@@ -13,7 +13,6 @@
 
 #include <opencv2/core.hpp>
 #include <eigen3/Eigen/Dense>
-#include <CL/cl2.hpp>
 
 namespace rebvio {
 

@@ -15,7 +15,6 @@ find_package(catkin REQUIRED)
 ## System dependencies are found with CMake's conventions
 find_package(OpenCV REQUIRED COMPONENTS core imgproc)
 find_package(Eigen3 REQUIRED)
-find_package(OpenCL REQUIRED )
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -106,7 +105,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES rebvio
 #  CATKIN_DEPENDS other_catkin_pkg
-  DEPENDS OpenCV OpenCL Eigen3
+  DEPENDS OpenCV Eigen3
   CFG_EXTRAS ${PROJECT_NAME}.cmake
 )
 
@@ -121,7 +120,6 @@ include_directories(
  ${catkin_INCLUDE_DIRS}
  ${OpenCV_INCLUDE_DIRS}
  ${Eigen3_INCLUDE_DIRS}
- ${OpenCL_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -157,7 +155,6 @@ add_library(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
-  ${OpenCL_LIBRARIES}
 )
 
 #############
