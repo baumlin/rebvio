@@ -15,12 +15,12 @@
 
 namespace rebvio {
 
-Rebvio::Rebvio() {
-	// TODO Auto-generated constructor stub
 
-}
-
-Rebvio::Rebvio(rebvio::RebvioParams _params) : params_(_params), run_(true) {
+Rebvio::Rebvio(rebvio::RebvioParams _params) :
+		params_(_params),
+		run_(true),
+		edge_tracker_(std::make_shared<rebvio::Camera>())
+{
 	data_acquisition_thread_ = std::thread(&Rebvio::dataAcquisitionProcess,this);
 	state_estimation_thread_ = std::thread(&Rebvio::stateEstimationProcess,this);
 }

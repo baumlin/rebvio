@@ -9,8 +9,12 @@
 
 namespace rebvio {
 
-EdgeTracker::EdgeTracker() {
+EdgeTracker::EdgeTracker(rebvio::CameraPtr _camera) :
+	camera_(_camera),
+	detector_(camera_)
+{
 	// TODO Auto-generated constructor stub
+	distance_field_ = cv::Mat(camera_->rows_,camera_->cols_,CV_32SC1,cv::Scalar(-1));
 
 }
 
@@ -24,6 +28,10 @@ rebvio::types::EdgeMapPtr EdgeTracker::detect(rebvio::types::Image& _image,int _
 
 cv::Mat& EdgeTracker::getMask() {
 	return detector_.getMask();
+}
+
+void EdgeTracker::buildDistanceField(int _radius, float _min_mod) {
+
 }
 
 } /* namespace rebvio */

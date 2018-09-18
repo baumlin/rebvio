@@ -19,7 +19,7 @@ namespace rebvio {
 
 class EdgeDetector {
 public:
-	EdgeDetector();
+	EdgeDetector(rebvio::CameraPtr);
 	~EdgeDetector();
 
 	rebvio::types::EdgeMapPtr detect(rebvio::types::Image&,int);
@@ -31,7 +31,7 @@ private:
 	void buildMask(rebvio::types::EdgeMapPtr&);
 	void joinEdges(rebvio::types::EdgeMapPtr&);
 	int nextPoint(rebvio::types::EdgeMapPtr&,int,int,int);
-	void tuneThreshold(rebvio::types::EdgeMapPtr&,int);
+	void tuneThreshold(rebvio::types::EdgeMapPtr,int);
 
 private:
 	int keylines_count_;							//< Current number of detected keylines in current image
@@ -41,6 +41,7 @@ private:
 	int points_max_;									//< Maximum number of points
 	int points_tracked_;
 
+	rebvio::CameraPtr camera_;
 	rebvio::ScaleSpace scale_space_;
 
 	int plane_fit_size_;							//< Half window size -1 for DoG plane fitting: (2*plane_fit_size+1)^2

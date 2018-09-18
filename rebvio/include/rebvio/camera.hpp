@@ -9,6 +9,7 @@
 #define INCLUDE_REBVIO_CAMERA_HPP_
 
 #include <eigen3/Eigen/Dense>
+#include <memory>
 
 namespace rebvio {
 
@@ -35,6 +36,8 @@ private:
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+typedef std::shared_ptr<rebvio::Camera> CameraPtr;
 
 } /* namespace rebvio */
 

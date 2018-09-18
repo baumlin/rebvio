@@ -15,7 +15,7 @@ namespace rebvio {
 
 class EdgeTracker {
 public:
-	EdgeTracker();
+	EdgeTracker(rebvio::CameraPtr);
 	~EdgeTracker();
 
 	rebvio::types::EdgeMapPtr detect(rebvio::types::Image&,int);
@@ -24,7 +24,9 @@ public:
 
 
 private:
+	rebvio::CameraPtr camera_;
 	rebvio::EdgeDetector detector_;
+	cv::Mat distance_field_;
 
 };
 

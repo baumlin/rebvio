@@ -15,7 +15,7 @@
 
 namespace rebvio {
 
-EdgeDetector::EdgeDetector() :
+EdgeDetector::EdgeDetector(rebvio::CameraPtr _camera) :
 	keylines_count_(0),
 	keylines_size_(50000), //50000
 	points_ref_(15000),
@@ -29,9 +29,11 @@ EdgeDetector::EdgeDetector() :
 	gain_(5e-7),
 	max_threshold_(0.5),
 	min_threshold_(0.005),
-	max_image_value_(765) // (255*3)
+	max_image_value_(765), // (255*3)
+	camera_(_camera),
+	scale_space_(camera_)
 {
-	keylines_mask_ = cv::Mat(scale_space_.camera_.rows_,scale_space_.camera_.cols_,CV_32SC1,cv::Scalar(-1));
+	keylines_mask_ = cv::Mat(camera_->rows_,camera_->cols_,CV_32SC1,cv::Scalar(-1));
 }
 
 EdgeDetector::~EdgeDetector() {}
@@ -83,14 +85,14 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMapPtr& _map) {
 	float gradient_threshold_squared = (threshold_*max_image_value_*dog_threshold_)*(threshold_*max_image_value_*dog_threshold_);
 	float mag_threshold = (threshold_*max_image_value_)*(threshold_*max_image_value_);
 
-	for(int row = plane_fit_size_; row < scale_space_.camera_.rows_-plane_fit_size_; ++row) {
+	for(int row = plane_fit_size_; row < camera_->rows_-plane_fit_size_; ++row) {
 		int* km_ptr = keylines_mask_.ptr<int>(row);
 		const float* mag_ptr = scale_space_.gradient_mag_.ptr<float>(row);
 		const float* dog0_ptr = scale_space_.dog_.ptr<float>(row-1);
 		const float* dog1_ptr = scale_space_.dog_.ptr<float>(row);
 		const float* dog2_ptr = scale_space_.dog_.ptr<float>(row+1);
-		for(int col = plane_fit_size_; col < scale_space_.camera_.cols_-plane_fit_size_; ++col) {
-			int idx = col+row*scale_space_.camera_.cols_;
+		for(int col = plane_fit_size_; col < camera_->cols_-plane_fit_size_; ++col) {
+			int idx = col+row*camera_->cols_;
 			km_ptr[col] = -1;
 
 			if(mag_ptr[col] < mag_threshold) continue;
@@ -102,7 +104,7 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMapPtr& _map) {
 //			for(int r = -plane_fit_size_, k = 0; r <= plane_fit_size_; ++r) {
 //				const float* dog_ptr = scale_space_.dog_.ptr<float>(row+r);
 //				for(int c = -plane_fit_size_; c <= plane_fit_size_; ++c,++k) {
-////					float dog = scale_space_.dog_.at<float>((row+r)*scale_space_.camera_.cols_+col+c);
+////					float dog = scale_space_.dog_.at<float>((row+r)*camera_->cols_+col+c);
 //					float dog = dog_ptr[col+c];
 //					Y(k,0) = dog;
 //					pn = (dog > 0.0) ? pn+1 : pn-1;
@@ -149,7 +151,7 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMapPtr& _map) {
 			(*_map).keylines().emplace_back(types::KeyLine(idx,position,gradient));
 			km_ptr[col] = keylines_count_;
 			if(++keylines_count_ >= points_max_) { // now keylines_count_ == _map->size()
-				int idx_boundary = scale_space_.camera_.rows_*scale_space_.camera_.cols_;
+				int idx_boundary = camera_->rows_*camera_->cols_;
 				for(++idx; idx < idx_boundary; ++idx) {
 					keylines_mask_.at<int>(idx) = -1;
 				}
@@ -206,7 +208,7 @@ int EdgeDetector::nextPoint(rebvio::types::EdgeMapPtr& _map, int _x, int _y, int
 
 }
 
-void EdgeDetector::tuneThreshold(rebvio::types::EdgeMapPtr& _map, int _num_bins) {
+void EdgeDetector::tuneThreshold(rebvio::types::EdgeMapPtr _map, int _num_bins) {
 //	REBVIO_TIMER_TICK();
 	float max_dog = (*_map)[0].gradient_norm;
 	float min_dog = max_dog;

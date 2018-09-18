@@ -25,7 +25,6 @@ namespace rebvio {
 
 class Rebvio {
 public:
-	Rebvio();
 	Rebvio(rebvio::RebvioParams);
 	~Rebvio();
 

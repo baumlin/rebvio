@@ -12,7 +12,7 @@
 
 namespace rebvio {
 
-FastGaussian::FastGaussian(Camera _camera, float _sigma,int _n) :
+FastGaussian::FastGaussian(CameraPtr _camera, float _sigma,int _n) :
 		n_(_n),
 		sigma_(_sigma),
 		widths_(new int[n_])
@@ -37,8 +37,8 @@ FastGaussian::FastGaussian(Camera _camera, float _sigma,int _n) :
 	divisors_ = new cv::Mat[n_];
 	divisors_e_ = new Eigen::MatrixXf[n_];
 	for(int i=0;i<n_;i++){
-		divisors_[i]=cv::Mat(_camera.rows_,_camera.cols_,CV_32FC1);
-		divisors_e_[i] = Eigen::MatrixXf(_camera.rows_,_camera.cols_);
+		divisors_[i]=cv::Mat(_camera->rows_,_camera->cols_,CV_32FC1);
+		divisors_e_[i] = Eigen::MatrixXf(_camera->rows_,_camera->cols_);
 		precomputeDivisors(widths_[i],divisors_[i]);
 		precomputeDivisors(widths_[i],divisors_e_[i]);
 	}
@@ -374,12 +374,12 @@ EigenMat FastGaussian::smooth(EigenMat&& _in) {
 	return out;
 }
 
-ScaleSpace::ScaleSpace() :
-		camera_(Camera()),
+ScaleSpace::ScaleSpace(rebvio::CameraPtr _camera) :
+		camera_(_camera),
 		filter_{rebvio::FastGaussian(camera_,3.56359,3),rebvio::FastGaussian(camera_,filter_[0].sigma_true_*1.2599,3)}
 {
-		dog_ = cv::Mat(camera_.rows_,camera_.cols_,CV_32FC1,cv::Scalar(0));
-		gradient_mag_ = cv::Mat(camera_.rows_,camera_.cols_,CV_32FC1,cv::Scalar(0));
+		dog_ = cv::Mat(camera_->rows_,camera_->cols_,CV_32FC1,cv::Scalar(0));
+		gradient_mag_ = cv::Mat(camera_->rows_,camera_->cols_,CV_32FC1,cv::Scalar(0));
 }
 
 ScaleSpace::~ScaleSpace() {
