@@ -21,9 +21,10 @@ namespace types {
 class EdgeMap {
 
 public:
-	using SharedPtr =  std::shared_ptr<rebvio::types::EdgeMap>;
+	using SharedPtr = std::shared_ptr<rebvio::types::EdgeMap>;
 
 public:
+	EdgeMap() = delete;
 	EdgeMap(rebvio::Camera::SharedPtr _camera, int _size, uint64_t _ts);
 	rebvio::types::KeyLine& operator[](int _idx);
 	int size();

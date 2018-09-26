@@ -10,8 +10,6 @@
 
 #include "rebvio/types/primitives.hpp"
 #include "rebvio/camera.hpp"
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/Geometry>
 #include <cmath>
 
 #include <TooN/so3.h>
@@ -94,20 +92,6 @@ public:
 	}
 
 private:
-	static Eigen::Quaternionf expMap(const Eigen::Vector3f& _theta) {
-		const float theta_squared_norm = _theta.squaredNorm();
-		if(theta_squared_norm < 1e-6) {
-			Eigen::Quaternionf q(1,_theta(0)*0.5,_theta(1)*0.5,_theta(2)*0.5);
-			q.normalize();
-			return q;
-		}
-		const float theta_norm = sqrt(theta_squared_norm);
-		const Eigen::Vector3f q_imag = sin(theta_norm*0.5)*_theta/theta_norm;
-		Eigen::Quaternionf q(cos(theta_norm*0.5),q_imag(0),q_imag(1),q_imag(2));
-		return q;
-	}
-
-private:
 	unsigned int n_;
 	uint64_t last_ts_;				//!< Timestamp of last measurement [us]
 	uint64_t init_ts_; 				//!< Timestamp of first measurement [us]
@@ -120,8 +104,6 @@ private:
 	rebvio::types::Vector3f acc_;		//!< Mean accelerometer measurement
 	rebvio::types::Vector3f dgyro_;	//!< Mean gyro angular acceleration
 	rebvio::types::Vector3f cacc_;		//!< Compensated acceleration
-public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct ImuState {
@@ -207,7 +189,6 @@ struct ImuState {
 		u_est  = TooN::makeVector(1.0, 0.0, 0.0);
 	}
 
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } /* namespace types */

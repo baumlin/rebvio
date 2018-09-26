@@ -15,7 +15,6 @@ find_package(catkin REQUIRED COMPONENTS tf tf_conversions)
 
 ## System dependencies are found with CMake's conventions
 find_package(OpenCV REQUIRED COMPONENTS core imgproc)
-find_package(Eigen3 REQUIRED)
 find_package(LAPACK REQUIRED)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -107,7 +106,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES rebvio
   CATKIN_DEPENDS tf tf_conversions
-  DEPENDS OpenCV EIGEN3 TooN
+  DEPENDS OpenCV TooN
   CFG_EXTRAS ${PROJECT_NAME}.cmake
 )
 
@@ -121,7 +120,6 @@ include_directories(
   include
  ${catkin_INCLUDE_DIRS}
  ${OpenCV_INCLUDE_DIRS}
- ${Eigen3_INCLUDE_DIRS}
  ${TooN_INCLUDE_DIRS}
 )
 

@@ -10,7 +10,6 @@
 #include "rebvio/util/timer.hpp"
 #include "rebvio/types/primitives.hpp"
 
-#include <eigen3/Eigen/Dense>
 #include <iostream>
 #include <memory>
 
@@ -70,7 +69,6 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 	keylines_count_ = 0;
 
 	static bool calc_phi = true;
-//	static Eigen::MatrixXf Pinv(3,(plane_fit_size_*2+1)*(plane_fit_size_*2+1));
 	static TooN::Matrix<TooN::Dynamic,TooN::Dynamic,float> Pinv(3,(plane_fit_size_*2+1)*(plane_fit_size_*2+1));
 	if(calc_phi) {
 		TooN::Matrix<TooN::Dynamic,TooN::Dynamic,float> Phi((plane_fit_size_*2+1)*(plane_fit_size_*2+1),3);
@@ -82,7 +80,6 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 			}
 		}
 		Pinv = types::invert(Phi.T()*Phi)*Phi.T();
-//		Pinv = (Phi.transpose()*Phi).inverse()*Phi.transpose();
 		calc_phi = false;
 	}
 	float pn_threshold = float((2.0*plane_fit_size_+1.0)*(2.0*plane_fit_size_+1.0))*pos_neg_threshold_;
@@ -102,14 +99,10 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 			if(mag_ptr[col] < mag_threshold) continue;
 
 			int pn = 0;
-//			Eigen::MatrixXf Y((plane_fit_size_*2+1)*(plane_fit_size_*2+1),1);
 			TooN::Matrix<TooN::Dynamic,TooN::Dynamic,float> Y((plane_fit_size_*2+1)*(plane_fit_size_*2+1),1);
-//			REBVIO_NAMED_TIMER_TICK(loop);
-//
 			for(int r = -plane_fit_size_, k = 0; r <= plane_fit_size_; ++r) {
 				const float* dog_ptr = scale_space_.dog_.ptr<float>(row+r);
 				for(int c = -plane_fit_size_; c <= plane_fit_size_; ++c,++k) {
-//					float dog = scale_space_.dog_.at<float>((row+r)*camera_->cols_+col+c);
 					float dog = dog_ptr[col+c];
 					Y(k,0) = dog;
 					pn = (dog > 0.0) ? pn+1 : pn-1;
@@ -141,7 +134,6 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 
 			if(fabs(pn) > pn_threshold) continue;
 
-//			Eigen::Vector3f theta = (Pinv*Y).col(0);
 			types::Vector3f theta = (Pinv*Y).T()[0];
 			float tmp = theta[2]/(theta[0]*theta[0]+theta[1]*theta[1]);
 			float xs = -theta[0]*tmp;
@@ -149,12 +141,10 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 
 			if(fabs(xs) > 0.5 || fabs(ys) > 0.5) continue;
 
-//			Eigen::Vector2f gradient(theta(0),theta(1)); // DoG gradient
 			types::Vector2f gradient = TooN::makeVector(theta[0],theta[1]); // DoG gradient
 
 			if(gradient[0]*gradient[0]+gradient[1]*gradient[1] < gradient_threshold_squared) continue;
 
-//			Eigen::Vector2f position(float(col)+xs,float(row)+ys);
 			types::Vector2f position = TooN::makeVector(float(col)+xs,float(row)+ys);
 			(*_map).keylines().emplace_back(types::KeyLine(idx,position,gradient,TooN::makeVector(position[0]-camera_->cx_,position[1]-camera_->cy_)));
 			km_ptr[col] = keylines_count_;
