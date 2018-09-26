@@ -106,8 +106,8 @@ float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types:
 		}
 
 		float rho_p = 1.0/z_p;
-		float p_x = rho_p*(_vel[0]*camera_->fx_-_vel[2]*keyline.pos_hom[0])+keyline.pos_hom[0];
-		float p_y = rho_p*(_vel[1]*camera_->fy_-_vel[2]*keyline.pos_hom[1])+keyline.pos_hom[1];
+		float p_x = rho_p*(_vel[0]*camera_->fm_-_vel[2]*keyline.pos_hom[0])+keyline.pos_hom[0];
+		float p_y = rho_p*(_vel[1]*camera_->fm_-_vel[2]*keyline.pos_hom[1])+keyline.pos_hom[1];
 
 		float p_xc = p_x + camera_->cx_;
 		float p_yc = p_y + camera_->cy_;
@@ -127,8 +127,8 @@ float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types:
 		f = calculatefJ(_map,y*camera_->cols_+x,df_dx,df_dy,keyline,p_xc,p_yc,config_.search_range,config_.match_treshold,mnum,fi);
 		f *= weight;
 		score += f*f;
-		float jx = rho_p*camera_->fx_*df_dx*weight;
-		float jy = rho_p*camera_->fy_*df_dy*weight;
+		float jx = rho_p*camera_->fm_*df_dx*weight;
+		float jy = rho_p*camera_->fm_*df_dy*weight;
 		float jz = -rho_p*(p_x*df_dx+p_y*df_dy)*weight;
 
 		_JtJ(0,0) += jx*jx;
@@ -414,6 +414,48 @@ float EdgeTracker::estimateBias(const rebvio::types::Vector3f& _sacc, const rebv
     return k;
 }
 
+
+void EdgeTracker::updateInverseDepth(rebvio::types::Vector3f& _vel) {
+	for(int idx = 0; idx < distance_field_.map()->size(); ++idx) {
+		types::KeyLine& keyline = (*distance_field_.map())[idx];
+		if(keyline.match_id >= 0) updateInverseDepthARLU(keyline,_vel);
+	}
+
+}
+
+void EdgeTracker::updateInverseDepthARLU(rebvio::types::KeyLine& _keyline, rebvio::types::Vector3f& _vel) {
+	float qx = _keyline.pos_hom[0];
+	float qy = _keyline.pos_hom[1];
+	float q0x = _keyline.match_pos_hom[0];
+	float q0y = _keyline.match_pos_hom[1];
+	float v_rho = _keyline.sigma_rho*_keyline.sigma_rho;
+	float ux = _keyline.match_gradient[0]/_keyline.match_gradient_norm;
+	float uy = _keyline.match_gradient[1]/_keyline.match_gradient_norm;
+	float Y = ux*(qx-q0x)+uy*(qy-q0y);
+	float H = ux*(_vel[0]*camera_->fm_-_vel[2]*q0x)+uy*(_vel[1]*camera_->fm_-_vel[2]*q0y);
+	float rho_p = 1.0/(1.0/_keyline.rho+_vel[2]);
+	float F = 1.0/(1.0+_keyline.rho*_vel[2]);
+	F *= F;
+	float p_p = F*v_rho*F + config_.reshape_q_abs*config_.reshape_q_abs;
+	float e = Y-H*rho_p;
+
+	float S = H*p_p*H + config_.pixel_uncertainty*config_.pixel_uncertainty;
+	float K = p_p*H*(1.0/S);
+
+	_keyline.rho = rho_p+K*e;
+	v_rho = (1.0-K*H)*p_p;
+	_keyline.sigma_rho = std::sqrt(v_rho);
+	if(_keyline.rho < types::RHO_MIN) {
+		_keyline.sigma_rho += types::RHO_MIN-_keyline.rho;
+		_keyline.rho = types::RHO_MIN;
+	} else if(_keyline.rho > types::RHO_MAX) {
+		_keyline.rho = types::RHO_MAX;
+	} else if(std::isnan(_keyline.rho) || std::isnan(_keyline.sigma_rho) || std::isinf(_keyline.rho) || std::isinf(_keyline.sigma_rho)) {
+		std::cerr<<"ERROR NaN or INF RHO in updateInverseDepthARLU()!\n";
+		_keyline.rho = types::RHO_INIT;
+		_keyline.sigma_rho = types::RHO_MAX;
+	}
+}
 
 KaGMEKBias::KaGMEKBias(KaGMEKBias::Config& _config) :
 		config_(_config) {}

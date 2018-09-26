@@ -120,9 +120,12 @@ public:
 		unsigned int min_match_threshold{0}; 	//!< Minimum number of consecutive matches for a keyline
 		unsigned int iterations{5}; 						//!< Number of iterations for tracker
 		unsigned int global_min_matches_threshold{500}; //!< Minimum number of keyline matches for tracking and mapping
+		float pixel_uncertainty_match{2.0}; //!< Pixel uncertainty for the matching step
 		float pixel_uncertainty{1};	//!< Pixel uncertainty for the correction step
 		float quantile_cutoff{0.9}; //!< Percentile of the keylines to use
 		int quantile_num_bins{100}; //!< Number of bins in the histogram for percentile calculation
+		float regularization_threshold{0.5}; //!< Edgemap regularization threshold on keyline gradient
+		float reshape_q_abs{1e-4}; //!< EKF modeled absolute error on inverse depth
 	};
 
 public:
@@ -176,6 +179,9 @@ public:
 											const rebvio::types::Matrix3f& _Rf, rebvio::types::Vector3f& _g_est, rebvio::types::Vector3f& _b_est, const rebvio::types::Matrix6f& _Wvw,
 											rebvio::types::Vector6f& _Xvw, float _g_gravit);
 
+	void updateInverseDepth(rebvio::types::Vector3f& _vel);
+
+	void updateInverseDepthARLU(rebvio::types::KeyLine& _keyline, rebvio::types::Vector3f& _vel);
 
 private:
 	EdgeTracker::Config config_;

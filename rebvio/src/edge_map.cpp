@@ -88,6 +88,8 @@ int EdgeMap::forwardMatch(std::shared_ptr<rebvio::types::EdgeMap> _map) {
 		map_keyline.matches = keyline.matches+1;
 		map_keyline.match_id = idx;
 		map_keyline.match_pos_hom = keyline.pos_hom;
+		map_keyline.match_gradient = keyline.gradient;
+		map_keyline.match_gradient_norm = keyline.gradient_norm;
 		map_keyline.match_id_keyframe = keyline.match_id_keyframe;
 
 		++num_matches;
@@ -200,6 +202,8 @@ int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const r
 		keyline.match_id = i_mch;
 		keyline.matches = matched_keyline.matches+1;
 		keyline.match_pos_hom = matched_keyline.pos_hom;
+		keyline.match_gradient = matched_keyline.gradient;
+		keyline.match_gradient_norm = matched_keyline.gradient_norm;
 		keyline.match_id_keyframe = matched_keyline.match_id_keyframe;
 
 		if(keyline.match_id_keyframe >= 0) ++_kf_matches;
@@ -209,6 +213,43 @@ int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const r
 	return matches_;
 }
 
+int EdgeMap::regularize1Iter(float _threshold) {
+	int r_num = 0;
+	float r[size()];
+	float s[size()];
+	bool set[size()];
+	for(int idx = 0; idx < size(); ++idx) {
+		set[idx] = false;
+
+		types::KeyLine& keyline = keylines_[idx];
+		if(keyline.id_next < 0 || keyline.id_prev < 0) continue;
+
+		types::KeyLine& keyline_next = keylines_[keyline.id_next];
+		types::KeyLine& keyline_prev = keylines_[keyline.id_prev];
+		if((keyline_next.rho-keyline_prev.rho)*(keyline_next.rho-keyline_prev.rho) > (keyline_next.sigma_rho*keyline_next.sigma_rho+keyline_prev.sigma_rho*keyline_prev.sigma_rho)) continue;
+
+		float alpha = (keyline_next.gradient[0]*keyline_prev.gradient[0]+keyline_next.gradient[1]*keyline_prev.gradient[1])/(keyline_next.gradient_norm*keyline_prev.gradient_norm);
+		if(alpha-_threshold < 0.0) continue;
+
+		alpha = (alpha-_threshold)/(1.0-_threshold);
+		alpha /= std::fabs(keyline_next.rho-keyline_prev.rho)/(keyline_next.sigma_rho+keyline_prev.sigma_rho)+1.0;
+		float wr = 1.0/(keyline.sigma_rho*keyline.sigma_rho);
+		float wrn = alpha/(keyline_next.sigma_rho*keyline_next.sigma_rho);
+		float wrp = alpha/(keyline_prev.sigma_rho*keyline_prev.sigma_rho);
+
+		r[idx] = (keyline.rho*wr+keyline_next.rho*wrn+keyline_prev.rho*wrp)/(wr+wrn+wrp);
+		s[idx] = (keyline.sigma_rho*wr+keyline_next.sigma_rho*wrn+keyline_prev.sigma_rho*wrp)/(wr+wrn+wrp);
+		set[idx] = true;
+		++r_num;
+	}
+	for(int idx = 0; idx < size(); ++idx) {
+		if(set[idx]) {
+			keylines_[idx].rho = r[idx];
+			keylines_[idx].sigma_rho = s[idx];
+		}
+	}
+	return r_num;
+}
 
 } /* namespace types */
 } /* namespace rebvio */

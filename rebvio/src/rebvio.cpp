@@ -39,7 +39,7 @@ Rebvio::~Rebvio() {
 void Rebvio::imageCallback(rebvio::types::Image&& _image) {
 	// add image to queue
 	std::lock_guard<std::mutex> guard(image_buffer_mutex_);
-	static float K_data[9] = {camera_.fx_, 0.0, camera_.cx_, 0.0, camera_.fy_,camera_.cy_,0.0,0.0,1.0};
+	static float K_data[9] = {camera_.fm_, 0.0, camera_.cx_, 0.0, camera_.fm_,camera_.cy_,0.0,0.0,1.0};
 	static cv::Mat K = cv::Mat(3,3,CV_32FC1,K_data);
 	static float D_data[5] = {camera_.k1_,camera_.k2_,camera_.p1_,camera_.p2_,camera_.k3_};
 	static cv::Mat D = cv::Mat(1,5,CV_32FC1,D_data);
@@ -64,7 +64,7 @@ void Rebvio::dataAcquisitionProcess() {
 			rebvio::types::Image img;
 			{
 				std::lock_guard<std::mutex> guard(image_buffer_mutex_);
-				// get front image (pair)
+				// get front image
 				img = image_buffer_.front();
 				image_buffer_.pop();
 			}
@@ -81,8 +81,7 @@ void Rebvio::dataAcquisitionProcess() {
 					// integrate imu measurements
 					edge_map->imu().add(imu_buffer_.front(),camera_.getRc2i());
 					imu_buffer_.pop();
-				}
-				else break;
+				} else { break; }
 			}
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -240,7 +239,7 @@ void Rebvio::stateEstimationProcess() {
 			// match from the new edge map to the old one searching on the stereo line
 			klm_num = new_edge_map->directedMatch(old_edge_map,V,P_V,R,num_kf_back_m,
 					edge_tracker_.config().match_threshold_module,edge_tracker_.config().match_threshold_angle,edge_tracker_.config().search_range,
-					edge_tracker_.config().pixel_uncertainty);
+					edge_tracker_.config().pixel_uncertainty_match);
 			if(klm_num < edge_tracker_.config().global_min_matches_threshold) {
 				P_V = TooN::Identity*1e50;
 				V = TooN::Zeros;
@@ -251,8 +250,10 @@ void Rebvio::stateEstimationProcess() {
 			} else {
 
 				// regularize edgemap depth
+				new_edge_map->regularize1Iter(edge_tracker_.config().regularization_threshold);
 
 				// improve depth using kalman filter
+				edge_tracker_.updateInverseDepth(V);
 			}
 		}
 		// estimate position and pose incrementally
@@ -281,7 +282,7 @@ void Rebvio::stateEstimationProcess() {
 
 
 		++num_frames_;
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }
 

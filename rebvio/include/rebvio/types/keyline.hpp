@@ -25,7 +25,9 @@ struct KeyLine {
 	Vector2f pos_hom;
 	Vector2f match_pos_hom;
 	Vector2f gradient;
+	Vector2f match_gradient;
 	float gradient_norm;
+	float match_gradient_norm;
 	float score;
 	float rho;
 	float sigma_rho;
@@ -42,8 +44,10 @@ struct KeyLine {
 		pos_hom(TooN::Zeros),
 		match_pos_hom(TooN::Zeros),
 		gradient(TooN::Zeros),
-		gradient_norm(0),
-		score(0),
+		match_gradient(TooN::Zeros),
+		gradient_norm(0.0),
+		match_gradient_norm(0.0),
+		score(0.0),
 		rho(1.0),
 		sigma_rho(20.0),
 		id(-1),
@@ -60,10 +64,12 @@ struct KeyLine {
 		pos_hom(_pos_hom),
 		match_pos_hom(_pos_hom),
 		gradient(_gradient),
+		match_gradient(TooN::Zeros),
 		gradient_norm(sqrt(gradient[0]*gradient[0]+gradient[1]*gradient[1])),
+    match_gradient_norm(0.0),
 		score(0),
-		rho(1),
-		sigma_rho(20),
+		rho(1.0),
+		sigma_rho(20.0),
 		id(-1),
 		id_prev(-1),
 		id_next(-1),

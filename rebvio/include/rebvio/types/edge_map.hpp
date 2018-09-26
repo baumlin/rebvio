@@ -46,6 +46,9 @@ public:
 	int directedMatch(rebvio::types::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel, const rebvio::types::Matrix3f& _Rback,
 										int& _kf_matches, float _min_thr_mod, float _min_thr_ang, float _max_radius, float _loc_uncertainty);
 
+	int regularize1Iter(float _threshold);
+
+private:
 	inline int getIndex(float _row, float _col) {
 		int row = std::round(_row);
 		int col = std::round(_col);
