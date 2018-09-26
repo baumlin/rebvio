@@ -54,16 +54,21 @@ public:
 		}
 		R_ = R_*TooN::SO3<float>(tmp*dt).get_matrix();
 		last_ts_ = _imu.ts;
+		gyro_last_ = _imu.gyro;
 	}
 
 	const IntegratedImu& get(const rebvio::types::Matrix3f& _R_c2i, const rebvio::types::Vector3f _t_c2i) {
-		dt_ = (last_ts_-init_ts_);
+		dt_ = (last_ts_-init_ts_)/(n_-1)*n_; //estimate sampling time from interval and extrapolate to include initial measurement
 		if(n_ > 1) {
 			gyro_ /= float(n_);
 			acc_ /= float(n_);
-			dgyro_ = _R_c2i.T()*(gyro_last_-gyro_init_)/(float(dt_)/1000000.0);
+			dgyro_ = _R_c2i.T()*(gyro_last_-gyro_init_)/dt_s();
 		}
 		cacc_ = acc_+(dgyro_^(-(_R_c2i.T()*_t_c2i)));
+
+		n_ = 0;
+		init_ts_ = 0;
+		last_ts_ = 0;
 		return *this;
 	}
 
