@@ -124,7 +124,7 @@ public:
 	};
 
 public:
-	EdgeTracker(rebvio::CameraPtr);
+	EdgeTracker(rebvio::Camera::SharedPtr);
 	~EdgeTracker();
 
 	EdgeTracker::Config& config();
@@ -178,7 +178,7 @@ public:
 
 private:
 	EdgeTracker::Config config_;
-	rebvio::CameraPtr camera_;
+	rebvio::Camera::SharedPtr camera_;
 	rebvio::EdgeDetector detector_;
 	rebvio::DistanceField distance_field_;
 	unsigned int frame_count_;				//!< Number of frame minimizations performed

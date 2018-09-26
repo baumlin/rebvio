@@ -13,7 +13,7 @@
 
 namespace rebvio {
 
-EdgeTracker::EdgeTracker(rebvio::CameraPtr _camera) :
+EdgeTracker::EdgeTracker(rebvio::Camera::SharedPtr _camera) :
 	camera_(_camera),
 	detector_(camera_),
 	distance_field_(camera_->rows_,camera_->cols_,config_.search_range),

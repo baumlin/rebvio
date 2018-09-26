@@ -16,7 +16,7 @@
 
 namespace rebvio {
 
-EdgeDetector::EdgeDetector(rebvio::CameraPtr _camera) :
+EdgeDetector::EdgeDetector(rebvio::Camera::SharedPtr _camera) :
 	keylines_count_(0),
 	keylines_size_(50000), //50000
 	points_ref_(12000),

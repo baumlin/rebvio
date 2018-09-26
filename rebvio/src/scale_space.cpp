@@ -12,7 +12,7 @@
 
 namespace rebvio {
 
-FastGaussian::FastGaussian(CameraPtr _camera, float _sigma,int _n) :
+FastGaussian::FastGaussian(Camera::SharedPtr _camera, float _sigma,int _n) :
 		n_(_n),
 		sigma_(_sigma),
 		widths_(new int[n_])
@@ -377,7 +377,7 @@ EigenMat FastGaussian::smooth(EigenMat&& _in) {
 	return out;
 }
 
-ScaleSpace::ScaleSpace(rebvio::CameraPtr _camera) :
+ScaleSpace::ScaleSpace(rebvio::Camera::SharedPtr _camera) :
 		camera_(_camera),
 		filter_{rebvio::FastGaussian(camera_,3.56359,3),rebvio::FastGaussian(camera_,filter_[0].sigma_true_*1.2599,3)}
 {

@@ -19,8 +19,12 @@ namespace types {
 
 
 class EdgeMap {
+
 public:
-	EdgeMap(std::shared_ptr<rebvio::Camera> _camera, int _size, uint64_t _ts);
+	using SharedPtr =  std::shared_ptr<rebvio::types::EdgeMap>;
+
+public:
+	EdgeMap(rebvio::Camera::SharedPtr _camera, int _size, uint64_t _ts);
 	rebvio::types::KeyLine& operator[](int _idx);
 	int size();
 	std::vector<rebvio::types::KeyLine>& keylines();
@@ -33,12 +37,12 @@ public:
 	float estimateQuantile(float _sigma_rho_min, float _sigma_rho_max, float _percentile, int _num_bins);
 	void rotateKeylines(const rebvio::types::Matrix3f& _R);
 
-	int forwardMatch(std::shared_ptr<rebvio::types::EdgeMap> _map);
+	int forwardMatch(rebvio::types::EdgeMap::SharedPtr _map);
 
 	int searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel,
 									const rebvio::types::Matrix3f& _Rback, float _min_thr_mod, float _min_thr_ang, float _max_radius, float _loc_uncertainty);
 
-	int directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel, const rebvio::types::Matrix3f& _Rback,
+	int directedMatch(rebvio::types::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel, const rebvio::types::Matrix3f& _Rback,
 										int& _kf_matches, float _min_thr_mod, float _min_thr_ang, float _max_radius, float _loc_uncertainty);
 
 	inline int getIndex(float _row, float _col) {
@@ -54,7 +58,7 @@ private:
 	std::unordered_map<unsigned int,unsigned int> keylines_mask_; //!< A lookup table with the image index as key and keyline index in keylines_ as value
 	float threshold_; //!< Threshold for keyline detection
 	rebvio::types::IntegratedImu imu_;
-	rebvio::CameraPtr camera_;
+	rebvio::Camera::SharedPtr camera_;
 	unsigned int matches_;
 };
 

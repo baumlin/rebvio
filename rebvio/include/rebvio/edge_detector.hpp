@@ -19,7 +19,7 @@ namespace rebvio {
 
 class EdgeDetector {
 public:
-	EdgeDetector(rebvio::CameraPtr);
+	EdgeDetector(rebvio::Camera::SharedPtr);
 	~EdgeDetector();
 
 	rebvio::types::EdgeMapPtr detect(rebvio::types::Image&,int);
@@ -41,7 +41,7 @@ private:
 	int points_max_;									//< Maximum number of points
 	int points_tracked_;
 
-	rebvio::CameraPtr camera_;
+	rebvio::Camera::SharedPtr camera_;
 	rebvio::ScaleSpace scale_space_;
 
 	int plane_fit_size_;							//< Half window size -1 for DoG plane fitting: (2*plane_fit_size+1)^2

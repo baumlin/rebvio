@@ -24,7 +24,7 @@ typedef Eigen::Matrix<float,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> Eigen
  */
 class FastGaussian {
 public:
-	FastGaussian(rebvio::CameraPtr _cam, float _sigma, int _n=3);
+	FastGaussian(rebvio::Camera::SharedPtr _cam, float _sigma, int _n=3);
 	~FastGaussian();
 
 	/**
@@ -64,7 +64,7 @@ public:
  */
 class ScaleSpace {
 public:
-	ScaleSpace(rebvio::CameraPtr);
+	ScaleSpace(rebvio::Camera::SharedPtr);
 	~ScaleSpace();
 	void build(cv::Mat&);
 
@@ -79,7 +79,7 @@ private:
 	void calculateGradientMagnitude();
 
 public:
-	rebvio::CameraPtr camera_;
+	rebvio::Camera::SharedPtr camera_;
 	rebvio::FastGaussian filter_[2];//< Array of Gaussian filters with different (increasing) sigmas used to calculate the different scales for the DoG
 	cv::Mat scale_[2];							//< Array of the scale images (with increasing sigmas) calculated using the Gaussian filters
 	EigenMat scale_e_[2];

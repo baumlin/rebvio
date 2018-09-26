@@ -8,7 +8,6 @@
 #ifndef INCLUDE_REBVIO_CAMERA_HPP_
 #define INCLUDE_REBVIO_CAMERA_HPP_
 
-#include <eigen3/Eigen/Dense>
 #include <memory>
 #include "rebvio/types/primitives.hpp"
 
@@ -18,6 +17,9 @@ namespace rebvio {
  * @brief Class that implements the Pinhole camera model
  */
 class Camera {
+public:
+	using SharedPtr = std::shared_ptr<rebvio::Camera>;
+
 public:
 	Camera() :
 		fx_(458.654	),
@@ -46,10 +48,6 @@ public:
 		return t_c2i_;
 	}
 
-//	inline TooN::Vector<2> normalize(const TooN::Vector<2>& _p) const {
-//		return TooN::makeVector(float((_p[0]-cx_)/fx_),float((_p[1]-cy_)/fy_));
-//	}
-
 	inline rebvio::types::Vector3f normalize(const rebvio::types::Vector2f& _p) const {
 		return TooN::makeVector(float((_p[0]-cx_)/fm_),float((_p[1]-cy_)/fm_),1.0);
 	}
@@ -69,16 +67,10 @@ public:
 	unsigned int cols_;
 
 private:
-//	Eigen::Matrix3f R_c2i_;
-//	Eigen::Vector3f t_c2i_;
 	rebvio::types::Matrix3f R_c2i_;
 	rebvio::types::Vector3f t_c2i_;
-
-public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-typedef std::shared_ptr<rebvio::Camera> CameraPtr;
 
 } /* namespace rebvio */
 
