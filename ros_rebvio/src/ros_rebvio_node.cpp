@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
 	ros::NodeHandle nh;
 	image_transport::ImageTransport it(nh);
 	image_transport::Subscriber image_sub = it.subscribe("/cam0/image_raw",20,&image_callback);
-	ros::Subscriber imu_sub = nh.subscribe("/imu0",1,&imu_callback);
+	ros::Subscriber imu_sub = nh.subscribe("/imu0",200,&imu_callback);
 
 	edge_image_pub = it.advertise("edge_image",20);
 
