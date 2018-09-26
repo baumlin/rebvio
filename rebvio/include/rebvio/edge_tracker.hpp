@@ -121,6 +121,8 @@ public:
 		unsigned int iterations{5}; 						//!< Number of iterations for tracker
 		unsigned int global_min_matches_threshold{500}; //!< Minimum number of keyline matches for tracking and mapping
 		float pixel_uncertainty{1};	//!< Pixel uncertainty for the correction step
+		float quantile_cutoff{0.9}; //!< Percentile of the keylines to use
+		int quantile_num_bins{100}; //!< Number of bins in the histogram for percentile calculation
 	};
 
 public:
@@ -153,11 +155,10 @@ public:
 			const float& _px, const float& _py, const float& _max_r, const float& _simil_t, int& _mnum, float& _fi);
 
 	float tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
-			 float _sigma_rho_min, float* _residuals, float _min_mod);
+			 float _sigma_rho_min, float* _residuals);
 
 
-	float minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel,
-										float _sigma_rho_min, float _min_mod);
+	float minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel);
 
 	bool extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Matrix6f& _Rx, rebvio::types::Vector6f& _X);
 

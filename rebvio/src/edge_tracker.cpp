@@ -38,22 +38,6 @@ cv::Mat& EdgeTracker::getMask() {
 
 void EdgeTracker::buildDistanceField(rebvio::types::EdgeMap::SharedPtr _map) {
 	distance_field_.build(_map);
-//	for(int idx = 0; idx < _map->size(); ++idx) {
-//
-//		const rebvio::types::KeyLine& keyline = (*_map)[idx];
-//		// threshold on keyline gradient norm
-//		if(_map->threshold() > 0.0 && keyline.gradient_norm < _map->threshold()) continue;
-//		// get index of pixels in +/- direction of keyline gradient
-//		for(int r = -config_.search_range; r < config_.search_range; ++r) {
-//			int field_idx = getIndex((keyline.gradient[1]/keyline.gradient_norm)*float(r)+keyline.pos[1],
-//															 (keyline.gradient[0]/keyline.gradient_norm)*float(r)+keyline.pos[0]);
-//			if(field_idx < 0) continue;
-//			DistanceFieldElement& element = distance_field_[field_idx];
-//			if(element.id >= 0 && element.distance < std::abs(r)) continue;
-//			element.distance = std::abs(r);
-//			element.id = idx;
-//		}
-//	}
 }
 
 bool EdgeTracker::testfk(const rebvio::types::KeyLine& _keyline1, const rebvio::types::KeyLine& _keyline2, const float& _simil_t) {
@@ -96,7 +80,7 @@ float EdgeTracker::calculatefJ(rebvio::types::EdgeMap::SharedPtr _map, int _f_in
 }
 
 float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
-						 float _sigma_rho_min, float* _residuals, float _min_mod) {
+						 float _sigma_rho_min, float* _residuals) {
 	float score = 0.0;
 	_JtJ = TooN::Zeros;
 	_JtF = TooN::Zeros;
@@ -167,13 +151,15 @@ float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types:
 	return score;
 }
 
-float EdgeTracker::minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel,
-									float _sigma_rho_min, float _min_mod) {
+float EdgeTracker::minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel) {
+
+	float sigma_rho_min = _map->estimateQuantile(rebvio::types::RHO_MIN,rebvio::types::RHO_MAX,config_.quantile_cutoff,config_.quantile_num_bins);
+
 	types::Matrix3f JtJ, ApI, JtJnew;
 	types::Vector3f JtF, JtFnew;
 	types::Vector3f h, Vnew;
 	float residuals[_map->size()] = {0.0};
-	float F = tryVel(_map,JtJ,JtF,_vel,_sigma_rho_min,residuals,_min_mod);
+	float F = tryVel(_map,JtJ,JtF,_vel,sigma_rho_min,residuals);
 
 	float v = 2.0;
 	float tau = 1e-3;
@@ -184,7 +170,7 @@ float EdgeTracker::minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::t
 		ApI = JtJ+TooN::Identity*u;
 		h = types::invert(ApI)*(-JtF); // Solve ApI*h = -g
 		Vnew = _vel+h;
-		float Fnew = tryVel(_map,JtJnew,JtFnew,Vnew,_sigma_rho_min,residuals,_min_mod);
+		float Fnew = tryVel(_map,JtJnew,JtFnew,Vnew,sigma_rho_min,residuals);
 
 		gain = (F-Fnew)/(0.5*h*(u*h-JtF));
 		if(gain > 0.0) {

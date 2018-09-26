@@ -135,8 +135,6 @@ void Rebvio::stateEstimationProcess() {
 		}
 
 
-		float sigma_rho_q = old_edge_map->estimateQuantile(rebvio::types::RHO_MIN,rebvio::types::RHO_MAX,0.9,100); // TODO: qcutoffquantile=0.9, qcutoffnumbins=100
-
 		// build auxiliary distance field from edge map
 		edge_tracker_.buildDistanceField(new_edge_map);
 
@@ -165,7 +163,7 @@ void Rebvio::stateEstimationProcess() {
 
 
 		// estimate translation
-		edge_tracker_.minimizeVel(old_edge_map,imu_state_.Vg,imu_state_.P_Vg,sigma_rho_q,old_edge_map->threshold());
+		edge_tracker_.minimizeVel(old_edge_map,imu_state_.Vg,imu_state_.P_Vg);
 
 		// match from the old edge map to the new using the information from the previous minimization
 		old_edge_map->forwardMatch(new_edge_map);
