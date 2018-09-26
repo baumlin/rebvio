@@ -10,37 +10,42 @@
 namespace rebvio {
 namespace types {
 
-EdgeMap::EdgeMap(int _size, uint64_t _ts) : ts_(_ts) {
+EdgeMap::EdgeMap(std::shared_ptr<rebvio::Camera> _camera, int _size, uint64_t _ts) :
+		camera_(_camera),
+		ts_(_ts),
+		threshold_(-1.0),
+		matches_(0)
+{
 	keylines_.reserve(_size);
 }
 
-rebvio::types::KeyLine& EdgeMap::operator[](int _idx) {
-	return keylines_[_idx];
-}
+rebvio::types::KeyLine& EdgeMap::operator[](int _idx) { return keylines_[_idx]; }
 
-int EdgeMap::size() {
-	return keylines_.size();
-}
+int EdgeMap::size() { return keylines_.size(); }
 
-std::vector<rebvio::types::KeyLine>& EdgeMap::keylines() {
-	return keylines_;
-}
+std::vector<rebvio::types::KeyLine>& EdgeMap::keylines() { return keylines_; }
 
-uint64_t EdgeMap::ts() {
-	return ts_;
-}
+uint64_t EdgeMap::ts() { return ts_; }
+
+float& EdgeMap::threshold() { return threshold_; }
+
+rebvio::types::IntegratedImu& EdgeMap::imu() { return imu_; }
+
+unsigned int& EdgeMap::matches() { return matches_; }
+
+std::unordered_map<unsigned int,unsigned int>& EdgeMap::mask() { return keylines_mask_; }
 
 float EdgeMap::estimateQuantile(float _sigma_rho_min, float _sigma_rho_max, float _percentile, int _num_bins) {
 	int histogram[_num_bins] = {0};
-	for(int idx = 0; idx < keylines_.size(); ++idx) {
-		int i = (keylines_[idx].sigma_rho-_sigma_rho_min)/(_sigma_rho_max-_sigma_rho_min);
+	for(int idx = 0; idx < size(); ++idx) {
+		int i = _num_bins*(keylines_[idx].sigma_rho-_sigma_rho_min)/(_sigma_rho_max-_sigma_rho_min);
 		i = (i > _num_bins-1) ? (_num_bins-1) : i;
 		i = (i < 0) ? 0 : i;
 		++histogram[i];
 	}
 	float sigma_rho = 1e3;
 	for(int i = 0, a = 0; i < _num_bins; ++i) {
-		if(a > _percentile*keylines_.size()) {
+		if(a > _percentile*size()) {
 			sigma_rho = float(i)*(_sigma_rho_max-_sigma_rho_min)/float(_num_bins)+_sigma_rho_min;
 			break;
 		}
@@ -48,6 +53,162 @@ float EdgeMap::estimateQuantile(float _sigma_rho_min, float _sigma_rho_max, floa
 	}
 	return sigma_rho;
 }
+
+
+void EdgeMap::rotateKeylines(const rebvio::types::Matrix3f& _R){
+	for(rebvio::types::KeyLine& keyline : keylines_) {
+		types::Vector3f q = _R*TooN::makeVector(keyline.pos_hom[0]/camera_->fm_,keyline.pos_hom[1]/camera_->fm_,1.0);
+		if(fabs(q[2]) > 0.0) {
+			keyline.pos_hom[0] = q[0]/q[2]*camera_->fm_;
+			keyline.pos_hom[1] = q[1]/q[2]*camera_->fm_;
+			keyline.rho /= q[2];
+			keyline.sigma_rho /= q[2];
+		}
+		q = _R*TooN::makeVector(keyline.gradient[0],keyline.gradient[1],0.0);
+		keyline.gradient[0] = q[0];
+		keyline.gradient[1] = q[1];
+	}
+}
+
+int EdgeMap::forwardMatch(std::shared_ptr<rebvio::types::EdgeMap> _map) {
+	unsigned int num_matches = 0;
+	char count[_map->size()] = {0};
+	int nm = 0;
+
+	for(int idx = 0; idx < size(); ++idx) {
+		const types::KeyLine& keyline = keylines_[idx];
+		const int& idx_f = keyline.match_id_forward;	// Forward match might be available, from tryVelRot()
+		if(idx_f < 0) continue;
+		rebvio::types::KeyLine& map_keyline = (*_map)[idx_f];
+		if(map_keyline.match_id >= 0 && map_keyline.rho > keyline.rho) continue;
+
+		if(++count[idx_f] > 1) --num_matches; //TODO: should double matches count?
+		map_keyline.rho = keyline.rho;
+		map_keyline.sigma_rho = keyline.sigma_rho;
+		map_keyline.matches = keyline.matches+1;
+		map_keyline.match_id = idx;
+		map_keyline.match_pos_hom = keyline.pos_hom;
+		map_keyline.match_id_keyframe = keyline.match_id_keyframe;
+
+		++num_matches;
+	}
+	_map->matches_ = num_matches;
+	return num_matches;
+}
+
+int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel,
+								const rebvio::types::Matrix3f& _Rback, float _min_thr_mod, float _min_thr_ang, float _max_radius, float _loc_uncertainty) {
+	const float cang_min_edge = std::cos(_min_thr_ang*M_PI/180.0);
+
+	types::Vector3f p_m3 = _Rback*TooN::makeVector(_keyline.pos_hom[0],_keyline.pos_hom[1],camera_->fm_);
+	float pmx = p_m3[0]*camera_->fm_/p_m3[2];
+	float pmy = p_m3[1]*camera_->fm_/p_m3[2];
+	float k_rho = _keyline.rho*camera_->fm_/p_m3[2];
+
+	float pi0x = pmx+camera_->cx_;
+	float pi0y = pmy+camera_->cy_;
+
+	float t_x = -(_vel[0]*camera_->fm_-_vel[2]*pmx);
+	float t_y = -(_vel[1]*camera_->fm_-_vel[2]*pmy);
+	float norm_t = std::sqrt(t_x*t_x+t_y*t_y);
+
+	types::Vector3f DrDv = TooN::makeVector(camera_->fm_,camera_->fm_,-(pmx+pmy));
+	float sigma2_t = (DrDv.as_row()*_Rvel*DrDv.as_col())(0,0);
+
+
+	float dq_min = 0.0;
+	float dq_max = 0.0;
+	float dq_rho = 0.0;
+	int t_steps = 0;
+	if(norm_t > 1e-6) {
+		t_x /= norm_t;
+		t_y /= norm_t;
+		dq_rho = norm_t*k_rho;
+		dq_min = std::max(0.0f,norm_t*(k_rho-_keyline.sigma_rho))-_loc_uncertainty;
+		dq_max = std::min(_max_radius,norm_t*(k_rho+_keyline.sigma_rho))+_loc_uncertainty;
+		if(dq_rho > dq_max) {
+			dq_rho = 0.5*(dq_max+dq_min);
+			t_steps = static_cast<int>(dq_rho+0.5);
+		} else {
+			t_steps = static_cast<int>(std::max(dq_max-dq_rho,dq_rho-dq_min));
+		}
+	} else {
+		t_x = _keyline.gradient[0];
+		t_y = _keyline.gradient[1];
+		norm_t = _keyline.gradient_norm;
+		t_x /= norm_t;
+		t_y /= norm_t;
+		norm_t = 1.0;
+		dq_min = -_max_radius-_loc_uncertainty;
+		dq_max = _max_radius+_loc_uncertainty;
+		dq_rho = 0.0;
+		t_steps = dq_max;
+	}
+
+	float tn = dq_rho;
+	float tp = dq_rho+1;
+	for(int t_i = 0; t_i < t_steps; ++t_i, ++tp, --tn) {
+		for(int i_idx = 0; i_idx < 2; ++i_idx) {
+			float t;
+			if(i_idx) {
+				t = tp;
+				if(t > dq_max) continue;
+			} else {
+				t = tn;
+				if(t < dq_min) continue;
+			}
+
+			int idx = getIndex(t_y*t+pi0y,t_x*t+pi0x);
+			if(idx < 0) continue;
+
+			auto search = keylines_mask_.find(idx);
+			if(search != keylines_mask_.end()) {
+				const types::KeyLine& keyline = keylines_[search->second];
+
+				float cang = (keyline.gradient[0]*_keyline.gradient[0]+keyline.gradient[1]*_keyline.gradient[1])/(keyline.gradient_norm*_keyline.gradient_norm);
+				if(cang < cang_min_edge || std::fabs(keyline.gradient_norm/_keyline.gradient_norm-1.0) > _min_thr_mod) continue;
+
+				float v_rho_dr = (_loc_uncertainty*_loc_uncertainty+keyline.sigma_rho*keyline.sigma_rho*norm_t*norm_t+sigma2_t*keyline.rho*keyline.rho);
+				if((t-norm_t*keyline.rho)*(t-norm_t*keyline.rho) > v_rho_dr) continue;
+
+				return search->second;
+			}
+
+		}
+	}
+
+	return -1;
+}
+
+
+int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel, const rebvio::types::Matrix3f& _Rback,
+													 int& _kf_matches, float _min_thr_mod, float _min_thr_ang, float _max_radius, float _loc_uncertainty) {
+	matches_ = 0;
+	_kf_matches = 0;
+
+	int i_mch;
+	types::Vector3f vel = _Rback*_vel;
+	types::Matrix3f Rvel = _Rback*_Rvel*_Rback.T();
+
+	for(int idx = 0; idx < size(); ++idx) {
+		types::KeyLine& keyline = keylines_[idx];
+		if((i_mch = _map->searchMatch(keyline,_vel,_Rvel,_Rback,_min_thr_mod,_min_thr_ang,_max_radius,_loc_uncertainty)) < 0) continue;
+
+		const types::KeyLine& matched_keyline = (*_map)[i_mch];
+		keyline.rho = matched_keyline.rho;
+		keyline.sigma_rho = matched_keyline.sigma_rho;
+		keyline.match_id = i_mch;
+		keyline.matches = matched_keyline.matches+1;
+		keyline.match_pos_hom = matched_keyline.pos_hom;
+		keyline.match_id_keyframe = matched_keyline.match_id_keyframe;
+
+		if(keyline.match_id_keyframe >= 0) ++_kf_matches;
+		++matches_;
+	}
+
+	return matches_;
+}
+
 
 } /* namespace types */
 } /* namespace rebvio */

@@ -11,11 +11,12 @@ include(cmake/FindTooN.cmake)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED) 
+find_package(catkin REQUIRED COMPONENTS tf tf_conversions) 
 
 ## System dependencies are found with CMake's conventions
 find_package(OpenCV REQUIRED COMPONENTS core imgproc)
 find_package(Eigen3 REQUIRED)
+find_package(LAPACK REQUIRED)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -105,7 +106,7 @@ find_package(Eigen3 REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES rebvio
-#  CATKIN_DEPENDS other_catkin_pkg
+  CATKIN_DEPENDS tf tf_conversions
   DEPENDS OpenCV EIGEN3 TooN
   CFG_EXTRAS ${PROJECT_NAME}.cmake
 )
@@ -157,6 +158,7 @@ add_library(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+  ${LAPACK_LIBRARIES}
 )
 
 #############

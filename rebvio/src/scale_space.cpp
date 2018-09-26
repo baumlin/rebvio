@@ -65,14 +65,17 @@ cv::Mat FastGaussian::createIntegralImage(cv::Mat& _in) {
 //			integral_image.at<float>(row,col) = integral_image.at<float>(row,col-1)+_in.at<float>(row,col);
 //		}
 	}
+//  std::cout<<__FILE__<<__LINE__<<"\n";
 
 	for(int row = 1; row < integral_image.rows; ++row) {
 		const float* ii_ptr_prev = integral_image.ptr<float>(row-1);
 		float* ii_ptr = integral_image.ptr<float>(row);
 		for(int col = 0; col < integral_image.cols; ++col) {
 			ii_ptr[col] += ii_ptr_prev[col];
+//	    std::cout<<ii_ptr[col]<<",";
 		}
 	}
+//  std::cout<<"\n";
 
 //	for(int col = 0; col < integral_image.cols; ++col) {
 //		for(int row = 1; row < integral_image.rows; ++row) {

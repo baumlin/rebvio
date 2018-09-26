@@ -8,9 +8,16 @@
 #ifndef INCLUDE_REBVIO_PARAMS_HPP_
 #define INCLUDE_REBVIO_PARAMS_HPP_
 
+#include "rebvio/types/imu.hpp"
+
 namespace rebvio {
 
 struct RebvioParams {
+
+
+
+	// IMU
+	rebvio::types::ImuState::ImuStateConfig imu_state_config_;
 
 };
 
