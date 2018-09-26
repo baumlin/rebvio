@@ -125,6 +125,7 @@ include_directories(
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
+  src/undistorter.cpp
   src/scale_space.cpp
   src/edge_detector.cpp
   src/edge_tracker.cpp

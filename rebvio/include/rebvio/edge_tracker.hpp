@@ -39,7 +39,8 @@ public:
 
 		map_ = _map;
 		int size = rows_*cols_;
-		for(int idx = 0; idx < size; ++idx) field_[idx].id = -1;
+		for(int i = 0; i < size; ++i) field_[i].id = -1;
+
 		for(int idx = 0; idx < _map->size(); ++idx) {
 
 			const rebvio::types::KeyLine& keyline = (*_map)[idx];

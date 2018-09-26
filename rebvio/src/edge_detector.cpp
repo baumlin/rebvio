@@ -58,6 +58,7 @@ rebvio::types::EdgeMap::SharedPtr EdgeDetector::detect(rebvio::types::Image& _im
 	buildMask(map);
 	joinEdges(map);
 	tuneThreshold(map,_num_bins);
+	std::cout<<"detected "<<keylines_count_<<" keylines\n";
 	REBVIO_TIMER_TOCK();
 	return map;
 }
@@ -146,7 +147,7 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 			if(gradient[0]*gradient[0]+gradient[1]*gradient[1] < gradient_threshold_squared) continue;
 
 			types::Vector2f position = TooN::makeVector(float(col)+xs,float(row)+ys);
-			(*_map).keylines().emplace_back(types::KeyLine(idx,position,gradient,TooN::makeVector(position[0]-camera_->cx_,position[1]-camera_->cy_)));
+			_map->keylines().emplace_back(types::KeyLine(idx,position,gradient,TooN::makeVector(position[0]-camera_->cx_,position[1]-camera_->cy_)));
 			km_ptr[col] = keylines_count_;
 			_map->mask().emplace(idx,keylines_count_);
 			if(++keylines_count_ >= points_max_) { // now keylines_count_ == _map->size()

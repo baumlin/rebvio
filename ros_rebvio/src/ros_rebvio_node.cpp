@@ -29,8 +29,9 @@ void image_callback(const sensor_msgs::ImageConstPtr& _msg) {
 	cv_bridge::CvImagePtr cv_ptr;
 	try {
 		cv_ptr = cv_bridge::toCvCopy(_msg, sensor_msgs::image_encodings::MONO8);
-		cv::Mat image, image_undistorted;
-		cv_ptr->image.convertTo(image,CV_32FC1,3.0);
+		cv::Mat image;
+//		cv_ptr->image.convertTo(image,CV_32FC1,3.0);
+		cv::cvtColor(cv_ptr->image,image,cv::COLOR_GRAY2RGB);
 		rebvio_ptr->imageCallback(rebvio::types::Image{(_msg->header.stamp.toNSec())/1000,image});
 	}
 	catch (cv_bridge::Exception& e)

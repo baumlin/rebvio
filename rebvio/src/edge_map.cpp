@@ -72,7 +72,7 @@ void EdgeMap::rotateKeylines(const rebvio::types::Matrix3f& _R){
 
 int EdgeMap::forwardMatch(std::shared_ptr<rebvio::types::EdgeMap> _map) {
 	unsigned int num_matches = 0;
-	char count[_map->size()] = {0};
+//	char count[_map->size()] = {0};
 	int nm = 0;
 
 	for(int idx = 0; idx < size(); ++idx) {
@@ -82,7 +82,7 @@ int EdgeMap::forwardMatch(std::shared_ptr<rebvio::types::EdgeMap> _map) {
 		rebvio::types::KeyLine& map_keyline = (*_map)[idx_f];
 		if(map_keyline.match_id >= 0 && map_keyline.rho > keyline.rho) continue;
 
-		if(++count[idx_f] > 1) --num_matches; //TODO: should double matches count?
+//		if(++count[idx_f] > 1) --num_matches; //TODO: should double matches count?
 		map_keyline.rho = keyline.rho;
 		map_keyline.sigma_rho = keyline.sigma_rho;
 		map_keyline.matches = keyline.matches+1;
@@ -163,7 +163,7 @@ int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::t
 			int idx = getIndex(t_y*t+pi0y,t_x*t+pi0x);
 			if(idx < 0) continue;
 
-			auto search = keylines_mask_.find(idx);
+			auto search = keylines_mask_.find(idx);	// keyline_mask_ is an map with image index as key and index of according keyline in keylines_ as value
 			if(search != keylines_mask_.end()) {
 				const types::KeyLine& keyline = keylines_[search->second];
 
@@ -188,18 +188,19 @@ int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const r
 	matches_ = 0;
 	_kf_matches = 0;
 
-	int i_mch;
 	types::Vector3f vel = _Rback*_vel;
 	types::Matrix3f Rvel = _Rback*_Rvel*_Rback.T();
 
 	for(int idx = 0; idx < size(); ++idx) {
-		types::KeyLine& keyline = keylines_[idx];
-		if((i_mch = _map->searchMatch(keyline,_vel,_Rvel,_Rback,_min_thr_mod,_min_thr_ang,_max_radius,_loc_uncertainty)) < 0) continue;
 
-		const types::KeyLine& matched_keyline = (*_map)[i_mch];
+		types::KeyLine& keyline = keylines_[idx];
+		int idx_match = _map->searchMatch(keyline,vel,Rvel,_Rback,_min_thr_mod,_min_thr_ang,_max_radius,_loc_uncertainty);
+		if(idx_match < 0) continue;
+
+		const types::KeyLine& matched_keyline = (*_map)[idx_match];
 		keyline.rho = matched_keyline.rho;
 		keyline.sigma_rho = matched_keyline.sigma_rho;
-		keyline.match_id = i_mch;
+		keyline.match_id = idx_match;
 		keyline.matches = matched_keyline.matches+1;
 		keyline.match_pos_hom = matched_keyline.pos_hom;
 		keyline.match_gradient = matched_keyline.gradient;

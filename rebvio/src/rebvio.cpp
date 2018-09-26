@@ -7,6 +7,7 @@
 
 #include "rebvio/rebvio.hpp"
 #include "rebvio/scale_space.hpp"
+#include "rebvio/util/timer.hpp"
 
 #include <iostream>
 #include <chrono>
@@ -23,8 +24,9 @@ Rebvio::Rebvio(rebvio::RebvioParams _params) :
 		params_(_params),
 		run_(true),
 		num_frames_(0),
-		edge_tracker_(std::make_shared<rebvio::Camera>()),
-		imu_state_(_params.imu_state_config_)
+		edge_tracker_(std::make_shared<rebvio::Camera>(camera_)),
+		imu_state_(_params.imu_state_config_),
+		undistorter_(std::make_shared<rebvio::Camera>(camera_))
 {
 	data_acquisition_thread_ = std::thread(&Rebvio::dataAcquisitionProcess,this);
 	state_estimation_thread_ = std::thread(&Rebvio::stateEstimationProcess,this);
@@ -39,12 +41,13 @@ Rebvio::~Rebvio() {
 void Rebvio::imageCallback(rebvio::types::Image&& _image) {
 	// add image to queue
 	std::lock_guard<std::mutex> guard(image_buffer_mutex_);
-	static float K_data[9] = {camera_.fm_, 0.0, camera_.cx_, 0.0, camera_.fm_,camera_.cy_,0.0,0.0,1.0};
-	static cv::Mat K = cv::Mat(3,3,CV_32FC1,K_data);
-	static float D_data[5] = {camera_.k1_,camera_.k2_,camera_.p1_,camera_.p2_,camera_.k3_};
-	static cv::Mat D = cv::Mat(1,5,CV_32FC1,D_data);
+//	static float K_data[9] = {camera_.fm_, 0.0, camera_.cx_, 0.0, camera_.fm_,camera_.cy_,0.0,0.0,1.0};
+//	static cv::Mat K = cv::Mat(3,3,CV_32FC1,K_data);
+//	static float D_data[5] = {camera_.k1_,camera_.k2_,camera_.p1_,camera_.p2_,camera_.k3_};
+//	static cv::Mat D = cv::Mat(1,5,CV_32FC1,D_data);
 	cv::Mat image_undistorted;
-	cv::undistort(_image.data,image_undistorted,K,D);
+//	cv::undistort(_image.data,image_undistorted,K,D);
+	image_undistorted = undistorter_.undistort(_image.data);
 	_image.data = image_undistorted;
 	image_buffer_.push(_image);
 }
@@ -208,10 +211,11 @@ void Rebvio::stateEstimationProcess() {
 		imu_state_.Qrot = P_W;
 		imu_state_.QKp = P_Kp;
 		if(num_frames_ > 4+config_.imu_state_config_.init_bias_frame_num) {
-			K = edge_tracker_.estimateBias(imu_state_.As,imu_state_.Av,1.0,R,imu_state_.X,imu_state_.P,imu_state_.Qg,imu_state_.Qrot,imu_state_.Qbias,imu_state_.QKp,
-					imu_state_.Rg,imu_state_.Rs,imu_state_.Rv,imu_state_.g_est,imu_state_.b_est,W_Xgv,Xgva,config_.imu_state_config_.g_module);
+			K = edge_tracker_.estimateBias(imu_state_.As,imu_state_.Av,1.0,R,imu_state_.X,imu_state_.P,imu_state_.Qg,
+																		 imu_state_.Qrot,imu_state_.Qbias,imu_state_.QKp,imu_state_.Rg,imu_state_.Rs,imu_state_.Rv,
+																		 imu_state_.g_est,imu_state_.b_est,W_Xgv,Xgva,config_.imu_state_config_.g_module);
 			imu_state_.dVgva = Xgva.slice<0,3>();
-			imu_state_.dWgva=Xgva.slice<3,3>();
+			imu_state_.dWgva = Xgva.slice<3,3>();
 
 			TooN::SO3<float>R0gva(imu_state_.dWgva);
 			Rgva.T() = R0gva.get_matrix()*Rgva.T();

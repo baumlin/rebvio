@@ -13,6 +13,7 @@
 #include "rebvio/camera.hpp"
 #include "rebvio/types/image.hpp"
 #include "rebvio/types/imu.hpp"
+#include "rebvio/undistorter.hpp"
 
 #include <mutex>
 #include <thread>
@@ -59,11 +60,12 @@ private:
 
 	uint num_frames_;
 
-	rebvio::EdgeTracker edge_tracker_;
 
-	rebvio::Camera camera_;
 	rebvio::RebvioParams config_;
+	rebvio::Camera camera_;
+	rebvio::EdgeTracker edge_tracker_;
 	rebvio::types::ImuState imu_state_;
+	rebvio::Undistorter undistorter_;
 
 	std::queue<rebvio::types::Image> image_buffer_;
 	std::mutex image_buffer_mutex_;
