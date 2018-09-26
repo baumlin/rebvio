@@ -28,7 +28,7 @@ EdgeTracker::~EdgeTracker() {
 
 EdgeTracker::Config& EdgeTracker::config() { return config_; }
 
-rebvio::types::EdgeMapPtr EdgeTracker::detect(rebvio::types::Image& _image,int _num_bins) {
+rebvio::types::EdgeMap::SharedPtr EdgeTracker::detect(rebvio::types::Image& _image,int _num_bins) {
 	return detector_.detect(_image,_num_bins);
 }
 
@@ -36,7 +36,7 @@ cv::Mat& EdgeTracker::getMask() {
 	return detector_.getMask();
 }
 
-void EdgeTracker::buildDistanceField(rebvio::types::EdgeMapPtr _map) {
+void EdgeTracker::buildDistanceField(rebvio::types::EdgeMap::SharedPtr _map) {
 	distance_field_.build(_map);
 //	for(int idx = 0; idx < _map->size(); ++idx) {
 //
@@ -63,7 +63,7 @@ bool EdgeTracker::testfk(const rebvio::types::KeyLine& _keyline1, const rebvio::
 	return true;
 }
 
-float EdgeTracker::calculatefJ(rebvio::types::EdgeMapPtr _map, int _f_inx, float& _df_dx, float& _df_dy, rebvio::types::KeyLine& _keyline,
+float EdgeTracker::calculatefJ(rebvio::types::EdgeMap::SharedPtr _map, int _f_inx, float& _df_dx, float& _df_dy, rebvio::types::KeyLine& _keyline,
 		const float& _px, const float& _py, const float& _max_r, const float& _simil_t, int& _mnum, float& _fi) {
 
 	if(distance_field_[_f_inx].id < 0) {
@@ -95,7 +95,7 @@ float EdgeTracker::calculatefJ(rebvio::types::EdgeMapPtr _map, int _f_inx, float
 	return _fi/_keyline.sigma_rho;
 }
 
-float EdgeTracker::tryVel(rebvio::types::EdgeMapPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
+float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
 						 float _sigma_rho_min, float* _residuals, float _min_mod) {
 	float score = 0.0;
 	_JtJ = TooN::Zeros;
@@ -167,7 +167,7 @@ float EdgeTracker::tryVel(rebvio::types::EdgeMapPtr _map, rebvio::types::Matrix3
 	return score;
 }
 
-float EdgeTracker::minimizeVel(rebvio::types::EdgeMapPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel,
+float EdgeTracker::minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel,
 									float _sigma_rho_min, float _min_mod) {
 	types::Matrix3f JtJ, ApI, JtJnew;
 	types::Vector3f JtF, JtFnew;
@@ -204,7 +204,7 @@ float EdgeTracker::minimizeVel(rebvio::types::EdgeMapPtr _map, rebvio::types::Ve
 	return F;
 }
 
-bool EdgeTracker::extRotVel(rebvio::types::EdgeMapPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Matrix6f& _Rx, rebvio::types::Vector6f& _X) {
+bool EdgeTracker::extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Matrix6f& _Rx, rebvio::types::Vector6f& _X) {
 
 	int nm = 0;
 	for(int i = 0; i < distance_field_.map()->size(); ++i) {

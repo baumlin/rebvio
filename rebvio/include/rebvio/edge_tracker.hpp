@@ -35,7 +35,7 @@ public:
 	/**
 	 * Reset distance field, i.e. set all id's = -1 (and leave other quantities) and (re-)build
 	 */
-	void build(rebvio::types::EdgeMapPtr _map) {
+	void build(rebvio::types::EdgeMap::SharedPtr _map) {
 
 		map_ = _map;
 		int size = rows_*cols_;
@@ -60,7 +60,7 @@ public:
 
 	DistanceFieldElement& operator[] (int _index) { return field_[_index]; }
 
-	rebvio::types::EdgeMapPtr map() { return map_; }
+	rebvio::types::EdgeMap::SharedPtr map() { return map_; }
 
 private:
 	inline int getIndex(float _row, float _col) {
@@ -75,7 +75,7 @@ private:
 	uint rows_;
 	uint cols_;
 	float search_range_;
-	rebvio::types::EdgeMapPtr map_;
+	rebvio::types::EdgeMap::SharedPtr map_;
 };
 
 class KaGMEKBias {
@@ -129,9 +129,9 @@ public:
 
 	EdgeTracker::Config& config();
 
-	rebvio::types::EdgeMapPtr detect(rebvio::types::Image&,int);
+	rebvio::types::EdgeMap::SharedPtr detect(rebvio::types::Image&,int);
 	cv::Mat& getMask();
-	void buildDistanceField(rebvio::types::EdgeMapPtr _map);
+	void buildDistanceField(rebvio::types::EdgeMap::SharedPtr _map);
 
 
 	static inline bool testfk(const rebvio::types::KeyLine& _keyline1, const rebvio::types::KeyLine& _keyline2, const float& _simil_t);
@@ -149,17 +149,17 @@ public:
 	 * \param _mnum Match counter
 	 * \param _fi Pixel residual
 	 */
-	float calculatefJ(rebvio::types::EdgeMapPtr _map, int _f_inx, float& _df_dx, float& _df_dy, rebvio::types::KeyLine& _keyline,
+	float calculatefJ(rebvio::types::EdgeMap::SharedPtr _map, int _f_inx, float& _df_dx, float& _df_dy, rebvio::types::KeyLine& _keyline,
 			const float& _px, const float& _py, const float& _max_r, const float& _simil_t, int& _mnum, float& _fi);
 
-	float tryVel(rebvio::types::EdgeMapPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
+	float tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
 			 float _sigma_rho_min, float* _residuals, float _min_mod);
 
 
-	float minimizeVel(rebvio::types::EdgeMapPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel,
+	float minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel,
 										float _sigma_rho_min, float _min_mod);
 
-	bool extRotVel(rebvio::types::EdgeMapPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Matrix6f& _Rx, rebvio::types::Vector6f& _X);
+	bool extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Matrix6f& _Rx, rebvio::types::Vector6f& _X);
 
 	void correctBias(rebvio::types::Vector6f& _X, rebvio::types::Matrix6f& _Wx, rebvio::types::Vector3f& _Gb,
 									 rebvio::types::Matrix3f& _Wb, const rebvio::types::Matrix3f& _Rg, const rebvio::types::Matrix3f& _Rb);

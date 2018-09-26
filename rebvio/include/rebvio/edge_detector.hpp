@@ -22,16 +22,16 @@ public:
 	EdgeDetector(rebvio::Camera::SharedPtr);
 	~EdgeDetector();
 
-	rebvio::types::EdgeMapPtr detect(rebvio::types::Image&,int);
+	rebvio::types::EdgeMap::SharedPtr detect(rebvio::types::Image&,int);
 
 	int getNumKeylines() const;
 	cv::Mat& getMask();
 
 private:
-	void buildMask(rebvio::types::EdgeMapPtr&);
-	void joinEdges(rebvio::types::EdgeMapPtr&);
-	int nextPoint(rebvio::types::EdgeMapPtr&,int,int,int);
-	void tuneThreshold(rebvio::types::EdgeMapPtr,int);
+	void buildMask(rebvio::types::EdgeMap::SharedPtr&);
+	void joinEdges(rebvio::types::EdgeMap::SharedPtr&);
+	int nextPoint(rebvio::types::EdgeMap::SharedPtr&,int,int,int);
+	void tuneThreshold(rebvio::types::EdgeMap::SharedPtr,int);
 
 private:
 	int keylines_count_;							//< Current number of detected keylines in current image

@@ -46,7 +46,7 @@ void imu_callback(const sensor_msgs::ImuConstPtr& _msg) {
 		TooN::makeVector((float)_msg->linear_acceleration.x,(float)_msg->linear_acceleration.y,(float)_msg->linear_acceleration.z)});
 }
 
-void edge_image_callback(cv::Mat& _edge_image,rebvio::types::EdgeMapPtr& _map) {
+void edge_image_callback(cv::Mat& _edge_image,rebvio::types::EdgeMap::SharedPtr& _map) {
 	cv::Mat image;
 	if(_edge_image.type() != CV_8UC1) {
 		double min=0,max=0;

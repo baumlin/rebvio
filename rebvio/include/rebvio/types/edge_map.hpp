@@ -62,8 +62,6 @@ private:
 	unsigned int matches_;
 };
 
-typedef std::shared_ptr<rebvio::types::EdgeMap> EdgeMapPtr;
-
 } /* namespace types */
 } /* namespace rebvio */
 

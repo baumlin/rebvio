@@ -47,9 +47,9 @@ cv::Mat& EdgeDetector::getMask() {
 	return keylines_mask_;
 }
 
-rebvio::types::EdgeMapPtr EdgeDetector::detect(rebvio::types::Image& _image,int _num_bins) {
+rebvio::types::EdgeMap::SharedPtr EdgeDetector::detect(rebvio::types::Image& _image,int _num_bins) {
 	REBVIO_TIMER_TICK();
-	rebvio::types::EdgeMapPtr map = std::make_shared<rebvio::types::EdgeMap>(camera_,keylines_size_,_image.ts);
+	rebvio::types::EdgeMap::SharedPtr map = std::make_shared<rebvio::types::EdgeMap>(camera_,keylines_size_,_image.ts);
 	scale_space_.build(_image.data);
 
 	if(gain_ > 0) {
@@ -63,7 +63,7 @@ rebvio::types::EdgeMapPtr EdgeDetector::detect(rebvio::types::Image& _image,int 
 	return map;
 }
 
-void EdgeDetector::buildMask(rebvio::types::EdgeMapPtr& _map) {
+void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 	REBVIO_TIMER_TICK();
 
 	if(points_max_ > keylines_size_) points_max_ = keylines_size_;
@@ -171,7 +171,7 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMapPtr& _map) {
 	REBVIO_TIMER_TOCK();
 }
 
-void EdgeDetector::joinEdges(rebvio::types::EdgeMapPtr& _map) {
+void EdgeDetector::joinEdges(rebvio::types::EdgeMap::SharedPtr& _map) {
 	REBVIO_TIMER_TICK();
 	for(int idx = 0; idx < _map->size(); ++idx) {
 		int x = int((*_map)[idx].pos[0]+0.5);
@@ -186,7 +186,7 @@ void EdgeDetector::joinEdges(rebvio::types::EdgeMapPtr& _map) {
 	REBVIO_TIMER_TOCK();
 }
 
-int EdgeDetector::nextPoint(rebvio::types::EdgeMapPtr& _map, int _x, int _y, int _idx) {
+int EdgeDetector::nextPoint(rebvio::types::EdgeMap::SharedPtr& _map, int _x, int _y, int _idx) {
 //	REBVIO_TIMER_TICK();
 	float tx = -(*_map)[_idx].gradient[1];
 	float ty = (*_map)[_idx].gradient[0];
@@ -217,7 +217,7 @@ int EdgeDetector::nextPoint(rebvio::types::EdgeMapPtr& _map, int _x, int _y, int
 
 }
 
-void EdgeDetector::tuneThreshold(rebvio::types::EdgeMapPtr _map, int _num_bins) {
+void EdgeDetector::tuneThreshold(rebvio::types::EdgeMap::SharedPtr _map, int _num_bins) {
 //	REBVIO_TIMER_TICK();
 	float max_dog = (*_map)[0].gradient_norm;
 	float min_dog = max_dog;
