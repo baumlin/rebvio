@@ -20,7 +20,6 @@ EdgeDetector::EdgeDetector(rebvio::Camera::SharedPtr _camera) :
 	keylines_size_(50000), //50000
 	points_ref_(12000),
 	points_max_(16000),
-	points_tracked_(12000),
 	plane_fit_size_(2),
 	pos_neg_threshold_(0.4),
 	dog_threshold_(0.095259868922420),
@@ -59,6 +58,8 @@ rebvio::types::EdgeMap::SharedPtr EdgeDetector::detect(rebvio::types::Image& _im
 	joinEdges(map);
 	tuneThreshold(map,_num_bins);
 	std::cout<<"detected "<<keylines_count_<<" keylines\n";
+	std::cout<<"restimated threshold: "<<tuned_threshold_<<"\n";
+
 	REBVIO_TIMER_TOCK();
 	return map;
 }
@@ -169,8 +170,7 @@ void EdgeDetector::joinEdges(rebvio::types::EdgeMap::SharedPtr& _map) {
 		int y = int((*_map)[idx].pos[1]+0.5);
 		int id = nextPoint(_map,x,y,idx);
 		if(id < 0) continue;
-//		keylines_[id].id_prev = idx;
-//		keylines_[idx].id_next = id;
+
 		(*_map)[id].id_prev = idx;
 		(*_map)[idx].id_next = id;
 	}
@@ -213,8 +213,9 @@ void EdgeDetector::tuneThreshold(rebvio::types::EdgeMap::SharedPtr _map, int _nu
 	float max_dog = (*_map)[0].gradient_norm;
 	float min_dog = max_dog;
 	for(int idx = 1; idx < _map->size(); ++idx) {
-		if(max_dog < (*_map)[idx].gradient_norm) max_dog = (*_map)[idx].gradient_norm;
-		if(min_dog > (*_map)[idx].gradient_norm) min_dog = (*_map)[idx].gradient_norm;
+		const types::KeyLine& keyline = (*_map)[idx];
+		if(max_dog < keyline.gradient_norm) max_dog = keyline.gradient_norm;
+		if(min_dog > keyline.gradient_norm) min_dog = keyline.gradient_norm;
 	}
 	int histogram[_num_bins] = {0};
 	for(int idx = 0; idx < _map->size(); ++idx) {
@@ -224,7 +225,8 @@ void EdgeDetector::tuneThreshold(rebvio::types::EdgeMap::SharedPtr _map, int _nu
 		++histogram[i];
 	}
 	int i = 0;
-	for(int a = 0; i < _num_bins && a < points_tracked_; i++, a+=histogram[i]);
+	std::cout<<"  estimating threshold with knum="<<points_max_<<" ("<<min_dog<<","<<max_dog<<")\n";
+	for(int a = 0; i < _num_bins && a < points_max_; i++, a+=histogram[i]);
 	tuned_threshold_ = max_dog - float(i*(max_dog-min_dog))/float(_num_bins);
 	_map->threshold() = tuned_threshold_;
 //	REBVIO_TIMER_TOCK();

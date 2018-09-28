@@ -94,8 +94,6 @@ void Rebvio::dataAcquisitionProcess() {
 
 void Rebvio::stateEstimationProcess() {
 	float Kp = 1.0, K = 1.0;
-	float error_vel = 0.0; // estimated error for the velocity
-	float error_score = 0.0; // residual energy from the tracking
 	float P_Kp = 5e-6;
 
 	// estimated velocity, rotation and position
@@ -110,7 +108,7 @@ void Rebvio::stateEstimationProcess() {
 	// rotation matrix with filter correction
 	types::Matrix3f Rgva = TooN::Identity;
 
-	types::Matrix3f P_V = TooN::Identity*1e50;
+	types::Matrix3f P_V = TooN::Identity*std::numeric_limits<float>::max();
 	types::Matrix3f P_W = TooN::Identity*1e-10;
 
 	int num_gyro_init = 0;
@@ -121,8 +119,8 @@ void Rebvio::stateEstimationProcess() {
 
 	while(run_) {
 		int klm_num = 0, num_kf_fow_m = 0, num_kf_back_m = 0;
-		P_V = TooN::Identity*1e50;
-		P_W = TooN::Identity*1e50;
+		P_V = TooN::Identity*std::numeric_limits<float>::max();
+		P_W = TooN::Identity*std::numeric_limits<float>::max();
 		R = TooN::Identity;
 
 		// access newest and old edge map
@@ -163,17 +161,24 @@ void Rebvio::stateEstimationProcess() {
 		R.T() = TooN::SO3<float>(imu_state_.Bg)*R.T(); // TODO: what is this?
 		old_edge_map->rotateKeylines(R.T());
 
-
+		imu_state_.Vg = TooN::Zeros;
+		std::cout<<"Before: Vg="<<imu_state_.Vg<<"\n";
+		std::cout<<"Before: P_Vg:\n"<<imu_state_.P_Vg;
 		// estimate translation
 		edge_tracker_.minimizeVel(old_edge_map,imu_state_.Vg,imu_state_.P_Vg);
+		std::cout<<"After: Vg="<<imu_state_.Vg<<"\n";
 
 		// match from the old edge map to the new using the information from the previous minimization
 		old_edge_map->forwardMatch(new_edge_map);
+		std::cout<<"Number of forward matches: "<<new_edge_map->matches()<<"\n";
 
 		// visual roto-translation estimation using forward matches
 		types::Matrix6f R_Xv, R_Xgv, W_Xv, W_Xgv;
 		types::Vector6f Xv, Xgv, Xgva;
 		edge_tracker_.extRotVel(new_edge_map,imu_state_.Vg,W_Xv,R_Xv,Xv);
+    std::cout<<"W_Xv:\n"<<W_Xv<<"\n";
+    std::cout<<"R_Xv:\n"<<R_Xv<<"\n";
+    std::cout<<"Xv:\n"<<Xv<<"\n";
 
 		imu_state_.dVv = Xv.slice<0,3>();
 		imu_state_.dWv = Xv.slice<3,3>();
@@ -197,6 +202,7 @@ void Rebvio::stateEstimationProcess() {
 		TooN::SO3<float> R0(imu_state_.dWgv);
 		R.T() = R0.get_matrix()*R.T();
 		imu_state_.Vgv = R0*imu_state_.Vg+imu_state_.dVgv;
+		std::cout<<"VgV: "<<imu_state_.Vgv<<"\n";
 		V = imu_state_.Vgv;
 		imu_state_.Wgv = TooN::SO3<float>(R).ln();
 		R_Xgv = TooN::Cholesky<6,float>(W_Xgv).get_inverse();
@@ -206,6 +212,9 @@ void Rebvio::stateEstimationProcess() {
 		// mix with accelerometer using bayesian filter
 		edge_tracker_.estimateLs4Acceleration(-imu_state_.Vgv/frame_dt,imu_state_.Av,R,frame_dt);
 		edge_tracker_.estimateMeanAcceleration(new_edge_map->imu().cacc(),imu_state_.As,R);
+		std::cout<<"Av: "<<imu_state_.Av<<"\n";
+		std::cout<<"As: "<<imu_state_.As<<"\n";
+
 		Xgva = Xgv;
 		imu_state_.Rv = P_V/(frame_dt*frame_dt*frame_dt*frame_dt);
 		imu_state_.Qrot = P_W;
@@ -214,6 +223,7 @@ void Rebvio::stateEstimationProcess() {
 			K = edge_tracker_.estimateBias(imu_state_.As,imu_state_.Av,1.0,R,imu_state_.X,imu_state_.P,imu_state_.Qg,
 																		 imu_state_.Qrot,imu_state_.Qbias,imu_state_.QKp,imu_state_.Rg,imu_state_.Rs,imu_state_.Rv,
 																		 imu_state_.g_est,imu_state_.b_est,W_Xgv,Xgva,config_.imu_state_config_.g_module);
+			std::cout<<"-> K="<<K<<"\n";
 			imu_state_.dVgva = Xgva.slice<0,3>();
 			imu_state_.dWgva = Xgva.slice<3,3>();
 
@@ -232,10 +242,10 @@ void Rebvio::stateEstimationProcess() {
 
 		// check for minimization errors
 		if(TooN::isnan(V) || TooN::isnan(W)) {
-			P_V = TooN::Identity*1e50;
+			P_V = TooN::Identity*std::numeric_limits<float>::max();
 			V = TooN::Zeros;
 			Kp = 1.0;
-			P_Kp = 1e50;
+			P_Kp = std::numeric_limits<float>::max();
 			std::cerr<<"Minimization Error occured!\n";
 			run_ = false;
 		} else {
@@ -244,11 +254,12 @@ void Rebvio::stateEstimationProcess() {
 			klm_num = new_edge_map->directedMatch(old_edge_map,V,P_V,R,num_kf_back_m,
 					edge_tracker_.config().match_threshold_module,edge_tracker_.config().match_threshold_angle,edge_tracker_.config().search_range,
 					edge_tracker_.config().pixel_uncertainty_match);
+			std::cout<<"Found directed matches: "<<klm_num<<"\n";
 			if(klm_num < edge_tracker_.config().global_min_matches_threshold) {
-				P_V = TooN::Identity*1e50;
+				P_V = TooN::Identity*std::numeric_limits<float>::max();
 				V = TooN::Zeros;
 				Kp = 1.0;
-				P_Kp = 1e50;
+				P_Kp = std::numeric_limits<float>::max();
 				std::cerr<<"Insufficient number of keylines matches!\n";
 				run_ = false;
 			} else {

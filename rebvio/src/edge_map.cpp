@@ -230,7 +230,7 @@ int EdgeMap::regularize1Iter(float _threshold) {
 		if((keyline_next.rho-keyline_prev.rho)*(keyline_next.rho-keyline_prev.rho) > (keyline_next.sigma_rho*keyline_next.sigma_rho+keyline_prev.sigma_rho*keyline_prev.sigma_rho)) continue;
 
 		float alpha = (keyline_next.gradient[0]*keyline_prev.gradient[0]+keyline_next.gradient[1]*keyline_prev.gradient[1])/(keyline_next.gradient_norm*keyline_prev.gradient_norm);
-		if(alpha-_threshold < 0.0) continue;
+		if(alpha < _threshold) continue;
 
 		alpha = (alpha-_threshold)/(1.0-_threshold);
 		alpha /= std::fabs(keyline_next.rho-keyline_prev.rho)/(keyline_next.sigma_rho+keyline_prev.sigma_rho)+1.0;

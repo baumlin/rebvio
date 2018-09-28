@@ -154,6 +154,7 @@ float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types:
 float EdgeTracker::minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel) {
 
 	float sigma_rho_min = _map->estimateQuantile(rebvio::types::RHO_MIN,rebvio::types::RHO_MAX,config_.quantile_cutoff,config_.quantile_num_bins);
+  std::cout<<"s_rho_q = "<<sigma_rho_min<<"\n";
 
 	types::Matrix3f JtJ, ApI, JtJnew;
 	types::Vector3f JtF, JtFnew;
@@ -304,21 +305,20 @@ void EdgeTracker::estimateLs4Acceleration(const rebvio::types::Vector3f& _vel, r
 	Dt[3] = _dt;
 
 	T[0] = 0.0;
-	float mt = 0;
-	for(int i = 0; i<4; ++i){
+	float mt = 0.0;
+	for(int i = 0; i < 4; ++i){
 		T[i+1] = T[i]+Dt[i];
 		mt += T[i+1];
 	}
 	mt /= 5.0;
 
-	float num = 0.0;
 	float den = 0.0;
-
-	for(int i = 0; i<5; ++i)
+	for(int i = 0; i < 5; ++i)
 		den += (T[i]-mt)*(T[i]-mt);
 
 	float vm;
-	for(int i = 0; i<3; ++i){
+	float num = 0.0;
+	for(int i = 0; i < 3; ++i){
 
 		vm = (V[i]+V0[i]+V1[i]+V2[i]+V[3])/5.0;
 
@@ -328,7 +328,7 @@ void EdgeTracker::estimateLs4Acceleration(const rebvio::types::Vector3f& _vel, r
 		num += (V2[i]-vm)*(T[1]-mt);
 		num += (V3[i]-vm)*(T[0]-mt);
 
-		if(den>0)
+		if(den > 0.0)
 			_acc[i] = num/den;
 	}
 }
@@ -339,9 +339,9 @@ void EdgeTracker::estimateMeanAcceleration(const rebvio::types::Vector3f _sacc, 
 	static types::Vector3f A1 = TooN::Zeros;
 	static types::Vector3f A2 = TooN::Zeros;
 
-	A2=_R.T()*A1;
-	A1=_R.T()*A0;
-	A0=_R.T()*A;
+	A2 = _R.T()*A1;
+	A1 = _R.T()*A0;
+	A0 = _R.T()*A;
 	A=TooN::makeVector(_sacc[0],_sacc[1],_sacc[2]);
 
 	_acc = 0.25*(A+A0+A1+A2);
@@ -396,7 +396,7 @@ float EdgeTracker::estimateBias(const rebvio::types::Vector3f& _sacc, const rebv
     types::Matrix3f WVBias = JtJ.slice<4,4,3,3>();
 
     types::Matrix6f Wb = TooN::Zeros;
-    Wb.slice<3,3,3,3>()=WVBias;
+    Wb.slice<3,3,3,3>() = WVBias;
 
     types::Vector3f wc = _Xvw.slice<3,3>() - _b_est;
 
@@ -488,37 +488,37 @@ bool KaGMEKBias::problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f&
 	rebvio::types::Vector3f& a_v = config_.a_v;
 
 	rebvio::types::Vector11f F = TooN::Zeros;
-	F.slice<0,3>()=(a_s+g)*cos(a)-a_v*sin(a);
+	F.slice<0,3>() = (a_s+g)*std::cos(a)-a_v*std::sin(a);
 	F[3]=g*g-config_.G*config_.G;
 
 	F[4] = _X[0]-config_.x_p[0];                        //Error function Angle
 
 	if(F[4] > M_PI)                               //Error correction on the angle (cyclicity)
-		F[4] -= 2*M_PI;
+		F[4] -= 2.0*M_PI;
 	else if(F[4] < -M_PI)
-		F[4] += 2*M_PI;
+		F[4] += 2.0*M_PI;
 
 	TooN::SO3<float> Rb(b);
 	F.slice<5,3>() = Rb*g-config_.x_p.slice<1,3>();       //Error function G
 	F.slice<8,3>() = b-config_.x_p.slice<4,3>();           //Error function Bias
 
 	types::Vector11f dFda = TooN::Zeros;                          //
-	dFda.slice<0,3>()=-(a_s+g)*sin(a)-a_v*cos(a);
-	dFda[4]=1;
+	dFda.slice<0,3>() = -(a_s+g)*std::sin(a)-a_v*std::cos(a);
+	dFda[4] = 1.0;
 
 	types::Vector3f Rg = Rb*g;
-	types::Matrix3f Gx = TooN::Data(  0  , Rg[2], -Rg[1], \
-																	-Rg[2],  0  ,  Rg[0], \
-																	Rg[1],-Rg[0],   0   );
+	types::Matrix3f Gx = TooN::Data(  0.0  , Rg[2], -Rg[1], \
+																	-Rg[2],  0.0  ,  Rg[0], \
+																	Rg[1],-Rg[0],   0.0   );
 
 	TooN::Matrix<11,6,float> dFdx1 = TooN::Zeros;
-	dFdx1.slice<0,0,3,3>() = TooN::Identity*cos(a);         //dF(0:2)/dG    measurement
-	dFdx1.slice<3,0,1,3>() = 2*g.as_row();            //dF(3)/dG      G module
+	dFdx1.slice<0,0,3,3>() = TooN::Identity*std::cos(a);         //dF(0:2)/dG    measurement
+	dFdx1.slice<3,0,1,3>() = 2.0*g.as_row();            //dF(3)/dG      G module
 	dFdx1.slice<5,0,3,3>() = Rb.get_matrix();         //dF(5:7)/dG    G prior with bias rotation
 	dFdx1.slice<5,3,3,3>() = Gx;                      //dF(5:7)/db    derivative of G prior with rotation
 	dFdx1.slice<8,3,3,3>() = TooN::Identity;                //dF(8:10)/db   b prior
 
-	types::Matrix3f Pz = sin(a)*sin(a)*config_.Rv+cos(a)*cos(a)*config_.Rs;
+	types::Matrix3f Pz = std::sin(a)*std::sin(a)*config_.Rv+std::cos(a)*std::cos(a)*config_.Rs;
 
 	types::Matrix11f P = TooN::Zeros;
 	P.slice<0,0,3,3>() = Pz;
@@ -531,7 +531,7 @@ bool KaGMEKBias::problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f&
 	W.slice<4,4,7,7>() = TooN::Cholesky<7,float>(config_.Pp).get_inverse();
 
 	types::Matrix11f dPda = TooN::Zeros;
-	dPda.slice<0,0,3,3>() = 2*sin(a)*cos(a)*(config_.Rv-config_.Rs);
+	dPda.slice<0,0,3,3>() = 2.0*std::sin(a)*std::cos(a)*(config_.Rv-config_.Rs);
 
 	types::Matrix11f dWda = -W*dPda*W;
 
@@ -540,8 +540,8 @@ bool KaGMEKBias::problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f&
 	_JtJ.slice<0,1,1,6>() = _JtJ.slice<1,0,6,1>().T();
 	_JtJ.slice<1,1,6,6>() = dFdx1.T()*W*dFdx1;
 
-	_JtF[0]=0.5*F*dWda*F+dFda*W*F;
-	_JtF.slice<1,6>()=dFdx1.T()*W*F;
+	_JtF[0] = 0.5*F*dWda*F+dFda*W*F;
+	_JtF.slice<1,6>() = dFdx1.T()*W*F;
 
 	return true;
 }

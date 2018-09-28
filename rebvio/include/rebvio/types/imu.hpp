@@ -11,6 +11,7 @@
 #include "rebvio/types/primitives.hpp"
 #include "rebvio/camera.hpp"
 #include <cmath>
+#include <limits.h>
 
 #include <TooN/so3.h>
 
@@ -62,10 +63,10 @@ public:
 		if(n_ > 1) {
 			gyro_ /= float(n_);
 			acc_ /= float(n_);
+
 			dgyro_ = _R_c2i.T()*(gyro_last_-gyro_init_)/dt_s();
 		}
 		cacc_ = acc_+(dgyro_^(-(_R_c2i.T()*_t_c2i)));
-
 		n_ = 0;
 		init_ts_ = 0;
 		last_ts_ = 0;
@@ -143,13 +144,13 @@ struct ImuState {
 	rebvio::types::Vector3f dWgva{TooN::Zeros};
 	rebvio::types::Vector3f Vgva{TooN::Zeros};
 
-	rebvio::types::Matrix3f P_Vg{TooN::Identity*1e50}; //!< IMU Stages Velocity and Rotation Covariances
+	rebvio::types::Matrix3f P_Vg{TooN::Identity*std::numeric_limits<float>::max()}; //!< IMU Stages Velocity and Rotation Covariances
 
 	rebvio::types::Matrix3f RGyro{TooN::Identity};
 	rebvio::types::Matrix3f RGBias{TooN::Identity};
 
 	rebvio::types::Vector3f Bg{TooN::Zeros};						//!< Gyro bias
-	rebvio::types::Matrix3f W_Bg{TooN::Identity*1e50}; //!< Gyro bias covariance
+	rebvio::types::Matrix3f W_Bg{TooN::Identity*std::numeric_limits<float>::max()}; //!< Gyro bias covariance
 
 	rebvio::types::Vector3f Av{TooN::Zeros};						//!< Visual acceleration
 	rebvio::types::Vector3f As{TooN::Zeros};						//!< Accelerometer acceleration

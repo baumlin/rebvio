@@ -39,7 +39,6 @@ private:
 	cv::Mat keylines_mask_;						//< Image mask containing the keyline IDs (-1 if no keyline)
 	int points_ref_;									//< Number of points when autothresholded
 	int points_max_;									//< Maximum number of points
-	int points_tracked_;
 
 	rebvio::Camera::SharedPtr camera_;
 	rebvio::ScaleSpace scale_space_;
