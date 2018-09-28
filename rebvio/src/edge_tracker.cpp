@@ -276,6 +276,7 @@ void EdgeTracker::correctBias(rebvio::types::Vector6f& _X, rebvio::types::Matrix
 	types::Matrix3f iWgWb = types::invert(Wg+_Wb);
 	Wxb.slice<3,3,3,3>() += Wg*(TooN::Identity-iWgWb*Wg);
 	types::Vector6f X1 = _Wx*_X;
+	X1.slice<3,3>() += Wg*iWgWb*_Wb*_Gb;
 	_X = TooN::Cholesky<6,float>(Wxb).get_inverse()*X1;
 	_Gb = iWgWb*(Wg*_X.slice<3,3>()+_Wb*_Gb);
 	_Wb = Wg+_Wb;
