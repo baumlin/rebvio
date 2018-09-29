@@ -107,7 +107,12 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
 #  LIBRARIES ros_rebvio
-  CATKIN_DEPENDS rebvio
+  CATKIN_DEPENDS rebvio   
+  	roscpp
+  	rebvio
+  	sensor_msgs
+  	cv_bridge
+  	image_transport
 #  DEPENDS system_lib
 )
 

@@ -49,13 +49,11 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>rebvio</build_depend>
-  <build_depend>sensor_mgs</build_depend>
-  <build_depend>cv_bridge</build_depend>
-  <build_depend>image_transport</build_depend>
-  <build_export_depend>rebvio</build_export_depend>
-  <exec_depend>rebvio</exec_depend>
+  <depend>roscpp</depend>
+  <depend>rebvio</depend>
+  <depend>sensor_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>image_transport</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

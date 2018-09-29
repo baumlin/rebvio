@@ -104,7 +104,7 @@ find_package(LAPACK REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES rebvio
+  LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS tf tf_conversions
   DEPENDS OpenCV TooN
   CFG_EXTRAS ${PROJECT_NAME}.cmake
