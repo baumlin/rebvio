@@ -154,7 +154,6 @@ float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types:
 float EdgeTracker::minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel) {
 
 	float sigma_rho_min = _map->estimateQuantile(rebvio::types::RHO_MIN,rebvio::types::RHO_MAX,config_.quantile_cutoff,config_.quantile_num_bins);
-  std::cout<<"s_rho_q = "<<sigma_rho_min<<"\n";
 
 	types::Matrix3f JtJ, ApI, JtJnew;
 	types::Vector3f JtF, JtFnew;
