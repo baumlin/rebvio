@@ -15,9 +15,9 @@
 namespace rebvio {
 namespace types {
 
-constexpr float RHO_MAX=20.0;
-constexpr float RHO_MIN=1e-3;
-constexpr float RHO_INIT=1.0;
+constexpr types::Float RHO_MAX=20.0;
+constexpr types::Float RHO_MIN=1e-3;
+constexpr types::Float RHO_INIT=1.0;
 
 struct KeyLine {
 	unsigned int idx;
@@ -26,11 +26,11 @@ struct KeyLine {
 	Vector2f match_pos_hom;
 	Vector2f gradient;
 	Vector2f match_gradient;
-	float gradient_norm;
-	float match_gradient_norm;
-	float score;
-	float rho;
-	float sigma_rho;
+	types::Float gradient_norm;
+	types::Float match_gradient_norm;
+	types::Float score;
+	types::Float rho;
+	types::Float sigma_rho;
 	int id;					//!< ID of the keyline
 	int id_prev;			//!< ID of the previous consecutive keyline
 	int id_next;			//!< ID of the next consecutive keyline

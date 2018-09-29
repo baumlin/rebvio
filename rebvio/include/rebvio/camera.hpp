@@ -49,20 +49,20 @@ public:
 	}
 
 	inline rebvio::types::Vector3f normalize(const rebvio::types::Vector2f& _p) const {
-		return TooN::makeVector(float((_p[0]-cx_)/fm_),float((_p[1]-cy_)/fm_),1.0);
+		return TooN::makeVector(types::Float((_p[0]-cx_)/fm_),types::Float((_p[1]-cy_)/fm_),1.0);
 	}
 
 public:
-	float fx_;
-	float fy_;
-	float fm_; //!< mean focal length
-	float cx_;
-	float cy_;
-	float k1_;
-	float k2_;
-	float k3_;
-	float p1_;
-	float p2_;
+	types::Float fx_;
+	types::Float fy_;
+	types::Float fm_; //!< mean focal length
+	types::Float cx_;
+	types::Float cy_;
+	types::Float k1_;
+	types::Float k2_;
+	types::Float k3_;
+	types::Float p1_;
+	types::Float p2_;
 	unsigned int rows_;
 	unsigned int cols_;
 

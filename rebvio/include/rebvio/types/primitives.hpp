@@ -9,21 +9,23 @@
 #define INCLUDE_REBVIO_TYPES_PRIMITIVES_HPP_
 
 #include <TooN/TooN.h>
+#include <opencv2/core.hpp>
 
 namespace rebvio {
 namespace types {
 
+using Float = float; // double for double precision
+#define CV_FLOAT_PRECISION CV_32FC1 // CV_64FC1 for double precision
 
-
-using Vector2f = TooN::Vector<2,float>;
-using Vector3f = TooN::Vector<3,float>;
-using Vector6f = TooN::Vector<6,float>;
-using Vector7f = TooN::Vector<7,float>;
-using Vector11f = TooN::Vector<11,float>;
-using Matrix3f = TooN::Matrix<3,3,float>;
-using Matrix6f = TooN::Matrix<6,6,float>;
-using Matrix7f = TooN::Matrix<7,7,float>;
-using Matrix11f = TooN::Matrix<11,11,float>;
+using Vector2f = TooN::Vector<2,types::Float>;
+using Vector3f = TooN::Vector<3,types::Float>;
+using Vector6f = TooN::Vector<6,types::Float>;
+using Vector7f = TooN::Vector<7,types::Float>;
+using Vector11f = TooN::Vector<11,types::Float>;
+using Matrix3f = TooN::Matrix<3,3,types::Float>;
+using Matrix6f = TooN::Matrix<6,6,types::Float>;
+using Matrix7f = TooN::Matrix<7,7,types::Float>;
+using Matrix11f = TooN::Matrix<11,11,types::Float>;
 
 
 /**

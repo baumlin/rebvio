@@ -40,15 +40,15 @@ void EdgeTracker::buildDistanceField(rebvio::types::EdgeMap::SharedPtr _map) {
 	distance_field_.build(_map);
 }
 
-bool EdgeTracker::testfk(const rebvio::types::KeyLine& _keyline1, const rebvio::types::KeyLine& _keyline2, const float& _simil_t) {
-	float norm_squared = _keyline2.gradient_norm*_keyline2.gradient_norm;
-	float dot_product = _keyline1.gradient[0]*_keyline2.gradient[0]+_keyline1.gradient[1]*_keyline2.gradient[1];
+bool EdgeTracker::testfk(const rebvio::types::KeyLine& _keyline1, const rebvio::types::KeyLine& _keyline2, const types::Float& _simil_t) {
+	types::Float norm_squared = _keyline2.gradient_norm*_keyline2.gradient_norm;
+	types::Float dot_product = _keyline1.gradient[0]*_keyline2.gradient[0]+_keyline1.gradient[1]*_keyline2.gradient[1];
 	if(std::fabs(dot_product-norm_squared) > _simil_t*norm_squared)	return false; // |g1*g2 - g2*g2|/(g2*g2) > threshold ?
 	return true;
 }
 
-float EdgeTracker::calculatefJ(rebvio::types::EdgeMap::SharedPtr _map, int _f_inx, float& _df_dx, float& _df_dy, rebvio::types::KeyLine& _keyline,
-		const float& _px, const float& _py, const float& _max_r, const float& _simil_t, int& _mnum, float& _fi) {
+types::Float EdgeTracker::calculatefJ(rebvio::types::EdgeMap::SharedPtr _map, int _f_inx, types::Float& _df_dx, types::Float& _df_dy, rebvio::types::KeyLine& _keyline,
+		const types::Float& _px, const types::Float& _py, const types::Float& _max_r, const types::Float& _simil_t, int& _mnum, types::Float& _fi) {
 
 	if(distance_field_[_f_inx].id < 0) {
 		_df_dx = 0.0;
@@ -63,11 +63,11 @@ float EdgeTracker::calculatefJ(rebvio::types::EdgeMap::SharedPtr _map, int _f_in
 		return config_.search_range/_keyline.sigma_rho;
 	}
 
-	float dx = _px-keyline.pos[0];
-	float dy = _py-keyline.pos[1];
+	types::Float dx = _px-keyline.pos[0];
+	types::Float dy = _py-keyline.pos[1];
 
-	float gnx = keyline.gradient[0]/keyline.gradient_norm;
-	float gny = keyline.gradient[1]/keyline.gradient_norm;
+	types::Float gnx = keyline.gradient[0]/keyline.gradient_norm;
+	types::Float gny = keyline.gradient[1]/keyline.gradient_norm;
 	_fi = (dx*gnx+dy*gny); // Residual in direction of the gradient
 
 	_df_dx = gnx/_keyline.sigma_rho;
@@ -79,9 +79,9 @@ float EdgeTracker::calculatefJ(rebvio::types::EdgeMap::SharedPtr _map, int _f_in
 	return _fi/_keyline.sigma_rho;
 }
 
-float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
-						 float _sigma_rho_min, float* _residuals) {
-	float score = 0.0;
+types::Float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
+						 types::Float _sigma_rho_min, types::Float* _residuals) {
+	types::Float score = 0.0;
 	_JtJ = TooN::Zeros;
 	_JtF = TooN::Zeros;
 	int mnum = 0;
@@ -94,23 +94,23 @@ float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types:
 		// Use keyline if uncertainty is not too high or it has certain number of matches
 		if(keyline.sigma_rho > _sigma_rho_min || keyline.matches < std::min(config_.min_match_threshold,frame_count_)) continue;
 
-		float weight = 1.0;
+		types::Float weight = 1.0;
 		if(_residuals[idx] > config_.reweight_distance) weight = config_.reweight_distance/_residuals[idx];
 
-		float z_p = 1.0/keyline.rho+_vel[2];
-		float f;
+		types::Float z_p = 1.0/keyline.rho+_vel[2];
+		types::Float f;
 		if(z_p <= 0.0) {
 			f = (1.0/keyline.sigma_rho)*config_.search_range*weight;
 			score += f*f;
 			continue;
 		}
 
-		float rho_p = 1.0/z_p;
-		float p_x = rho_p*(_vel[0]*camera_->fm_-_vel[2]*keyline.pos_hom[0])+keyline.pos_hom[0];
-		float p_y = rho_p*(_vel[1]*camera_->fm_-_vel[2]*keyline.pos_hom[1])+keyline.pos_hom[1];
+		types::Float rho_p = 1.0/z_p;
+		types::Float p_x = rho_p*(_vel[0]*camera_->fm_-_vel[2]*keyline.pos_hom[0])+keyline.pos_hom[0];
+		types::Float p_y = rho_p*(_vel[1]*camera_->fm_-_vel[2]*keyline.pos_hom[1])+keyline.pos_hom[1];
 
-		float p_xc = p_x + camera_->cx_;
-		float p_yc = p_y + camera_->cy_;
+		types::Float p_xc = p_x + camera_->cx_;
+		types::Float p_yc = p_y + camera_->cy_;
 
 		int x = static_cast<int>(p_xc+0.5);
 		int y = static_cast<int>(p_yc+0.5);
@@ -121,15 +121,15 @@ float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types:
 			continue;
 		}
 
-		float df_dx;
-		float df_dy;
-		float fi;
+		types::Float df_dx;
+		types::Float df_dy;
+		types::Float fi;
 		f = calculatefJ(_map,y*camera_->cols_+x,df_dx,df_dy,keyline,p_xc,p_yc,config_.search_range,config_.match_treshold,mnum,fi);
 		f *= weight;
 		score += f*f;
-		float jx = rho_p*camera_->fm_*df_dx*weight;
-		float jy = rho_p*camera_->fm_*df_dy*weight;
-		float jz = -rho_p*(p_x*df_dx+p_y*df_dy)*weight;
+		types::Float jx = rho_p*camera_->fm_*df_dx*weight;
+		types::Float jy = rho_p*camera_->fm_*df_dy*weight;
+		types::Float jz = -rho_p*(p_x*df_dx+p_y*df_dy)*weight;
 
 		_JtJ(0,0) += jx*jx;
 		_JtJ(1,1) += jy*jy;
@@ -151,26 +151,26 @@ float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types:
 	return score;
 }
 
-float EdgeTracker::minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel) {
+types::Float EdgeTracker::minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel) {
 
-	float sigma_rho_min = _map->estimateQuantile(rebvio::types::RHO_MIN,rebvio::types::RHO_MAX,config_.quantile_cutoff,config_.quantile_num_bins);
+	types::Float sigma_rho_min = _map->estimateQuantile(rebvio::types::RHO_MIN,rebvio::types::RHO_MAX,config_.quantile_cutoff,config_.quantile_num_bins);
 
 	types::Matrix3f JtJ, ApI, JtJnew;
 	types::Vector3f JtF, JtFnew;
 	types::Vector3f h, Vnew;
-	float residuals[_map->size()] = {0.0};
-	float F = tryVel(_map,JtJ,JtF,_vel,sigma_rho_min,residuals);
+	types::Float residuals[_map->size()] = {0.0};
+	types::Float F = tryVel(_map,JtJ,JtF,_vel,sigma_rho_min,residuals);
 
-	float v = 2.0;
-	float tau = 1e-3;
-	float u = tau*TooN::max_element(JtJ).first;
-	float gain;
+	types::Float v = 2.0;
+	types::Float tau = 1e-3;
+	types::Float u = tau*TooN::max_element(JtJ).first;
+	types::Float gain;
 
 	for(int iter = 0; iter < config_.iterations; ++iter) {
 		ApI = JtJ+TooN::Identity*u;
 		h = types::invert(ApI)*(-JtF); // Solve ApI*h = -g
 		Vnew = _vel+h;
-		float Fnew = tryVel(_map,JtJnew,JtFnew,Vnew,sigma_rho_min,residuals);
+		types::Float Fnew = tryVel(_map,JtJnew,JtFnew,Vnew,sigma_rho_min,residuals);
 
 		gain = (F-Fnew)/(0.5*h*(u*h-JtF));
 		if(gain > 0.0) {
@@ -197,23 +197,23 @@ bool EdgeTracker::extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio
 		if((*distance_field_.map())[i].match_id >= 0) ++nm;
 	}
 
-	TooN::Matrix<TooN::Dynamic,6,float> Phi = TooN::Zeros(nm,6);
-	TooN::Vector<TooN::Dynamic,float> Y = TooN::Zeros(nm);
+	TooN::Matrix<TooN::Dynamic,6,types::Float> Phi = TooN::Zeros(nm,6);
+	TooN::Vector<TooN::Dynamic,types::Float> Y = TooN::Zeros(nm);
 	int j = 0;
 	for(int idx = 0; idx < distance_field_.map()->size(); ++idx) {
 		const rebvio::types::KeyLine& keyline = (*distance_field_.map())[idx];
 
 		if(keyline.match_id < 0) continue;
 
-		float u_x = keyline.gradient[0]/keyline.gradient_norm;
-		float u_y = keyline.gradient[1]/keyline.gradient_norm;
+		types::Float u_x = keyline.gradient[0]/keyline.gradient_norm;
+		types::Float u_y = keyline.gradient[1]/keyline.gradient_norm;
 
-		float rho_t = 1.0/(1.0/keyline.rho+_vel[2]);
-		float qt_x = keyline.match_pos_hom[0] + rho_t*(_vel[0]*camera_->fm_-_vel[2]*keyline.match_pos_hom[0]);
-		float qt_y = keyline.match_pos_hom[1] + rho_t*(_vel[1]*camera_->fm_-_vel[2]*keyline.match_pos_hom[1]);
+		types::Float rho_t = 1.0/(1.0/keyline.rho+_vel[2]);
+		types::Float qt_x = keyline.match_pos_hom[0] + rho_t*(_vel[0]*camera_->fm_-_vel[2]*keyline.match_pos_hom[0]);
+		types::Float qt_y = keyline.match_pos_hom[1] + rho_t*(_vel[1]*camera_->fm_-_vel[2]*keyline.match_pos_hom[1]);
 
-		float q_x = keyline.pos_hom[0];
-		float q_y = keyline.pos_hom[1];
+		types::Float q_x = keyline.pos_hom[0];
+		types::Float q_y = keyline.pos_hom[1];
 
 		Phi(j,0) = u_x*rho_t*camera_->fm_;
 		Phi(j,1) = u_y*rho_t*camera_->fm_;
@@ -224,10 +224,10 @@ bool EdgeTracker::extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio
 
 		Y[j] = u_x*(q_x-qt_x)+u_y*(q_y-qt_y);
 
-		float dqvel = u_x*(_vel[0]*camera_->fm_-_vel[2]*keyline.match_pos_hom[0]) + u_y*(_vel[1]*camera_->fm_-_vel[2]*keyline.match_pos_hom[1]);
-		float s_y = std::sqrt(keyline.sigma_rho*keyline.sigma_rho*dqvel*dqvel+config_.pixel_uncertainty*config_.pixel_uncertainty);
+		types::Float dqvel = u_x*(_vel[0]*camera_->fm_-_vel[2]*keyline.match_pos_hom[0]) + u_y*(_vel[1]*camera_->fm_-_vel[2]*keyline.match_pos_hom[1]);
+		types::Float s_y = std::sqrt(keyline.sigma_rho*keyline.sigma_rho*dqvel*dqvel+config_.pixel_uncertainty*config_.pixel_uncertainty);
 
-		float weight = 1.0;
+		types::Float weight = 1.0;
 		if(std::fabs(Y[j]) > config_.reweight_distance) weight = std::fabs(Y[j])/config_.reweight_distance;
 
 		Phi.slice(j,0,1,6) /= s_y*weight;
@@ -244,7 +244,7 @@ bool EdgeTracker::extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio
 	types::Matrix6f JtJ = Phi.T()*Phi;
 	types::Vector6f JtF = Phi.T()*Y;
 
-	TooN::SVD<6,6,float> SVDpTp(JtJ);
+	TooN::SVD<6,6,types::Float> SVDpTp(JtJ);
 	_X = SVDpTp.backsub(JtF);
 	_Rx = SVDpTp.get_pinv();
 	_Wx = JtJ;
@@ -277,21 +277,21 @@ void EdgeTracker::correctBias(rebvio::types::Vector6f& _X, rebvio::types::Matrix
 	Wxb.slice<3,3,3,3>() += Wg*(TooN::Identity-iWgWb*Wg);
 	types::Vector6f X1 = _Wx*_X;
 	X1.slice<3,3>() += Wg*iWgWb*_Wb*_Gb;
-	_X = TooN::Cholesky<6,float>(Wxb).get_inverse()*X1;
+	_X = TooN::Cholesky<6,types::Float>(Wxb).get_inverse()*X1;
 	_Gb = iWgWb*(Wg*_X.slice<3,3>()+_Wb*_Gb);
 	_Wb = Wg+_Wb;
 	_Wx.slice<3,3,3,3>() += Wg;
 }
 
 void EdgeTracker::estimateLs4Acceleration(const rebvio::types::Vector3f& _vel, rebvio::types::Vector3f& _acc,
-														 const rebvio::types::Matrix3f& _R, float _dt) {
+														 const rebvio::types::Matrix3f& _R, types::Float _dt) {
 	static types::Vector3f V = TooN::Zeros;
 	static types::Vector3f V0 = TooN::Zeros;
 	static types::Vector3f V1 = TooN::Zeros;
 	static types::Vector3f V2 = TooN::Zeros;
 	static types::Vector3f V3 = TooN::Zeros;
-	static float T[5] = {0.0};
-	static float Dt[4] = {0.0};
+	static types::Float T[5] = {0.0};
+	static types::Float Dt[4] = {0.0};
 
 	V3 = _R.T()*V2;
 	V2 = _R.T()*V1;
@@ -304,19 +304,19 @@ void EdgeTracker::estimateLs4Acceleration(const rebvio::types::Vector3f& _vel, r
 	Dt[3] = _dt;
 
 	T[0] = 0.0;
-	float mt = 0.0;
+	types::Float mt = 0.0;
 	for(int i = 0; i < 4; ++i){
 		T[i+1] = T[i]+Dt[i];
 		mt += T[i+1];
 	}
 	mt /= 5.0;
 
-	float den = 0.0;
+	types::Float den = 0.0;
 	for(int i = 0; i < 5; ++i)
 		den += (T[i]-mt)*(T[i]-mt);
 
-	float vm;
-	float num = 0.0;
+	types::Float vm;
+	types::Float num = 0.0;
 	for(int i = 0; i < 3; ++i){
 
 		vm = (V[i]+V0[i]+V1[i]+V2[i]+V[3])/5.0;
@@ -347,11 +347,11 @@ void EdgeTracker::estimateMeanAcceleration(const rebvio::types::Vector3f _sacc, 
 }
 
 
-float EdgeTracker::estimateBias(const rebvio::types::Vector3f& _sacc, const rebvio::types::Vector3f& _facc, float _kP, const rebvio::types::Matrix3f _Rot,
+types::Float EdgeTracker::estimateBias(const rebvio::types::Vector3f& _sacc, const rebvio::types::Vector3f& _facc, types::Float _kP, const rebvio::types::Matrix3f _Rot,
 																	rebvio::types::Vector7f& _X, rebvio::types::Matrix7f& _P, const rebvio::types::Matrix3f& _Qg, const rebvio::types::Matrix3f& _Qrot,
-                                  const rebvio::types::Matrix3f& _Qbias, float _QKp, float _Rg, const rebvio::types::Matrix3f& _Rs,
+                                  const rebvio::types::Matrix3f& _Qbias, types::Float _QKp, types::Float _Rg, const rebvio::types::Matrix3f& _Rs,
 																	const rebvio::types::Matrix3f& _Rf, rebvio::types::Vector3f& _g_est, rebvio::types::Vector3f& _b_est, const rebvio::types::Matrix6f& _Wvw,
-																	rebvio::types::Vector6f& _Xvw, float _g_gravit) {
+																	rebvio::types::Vector6f& _Xvw, types::Float _g_gravit) {
 
     types::Matrix7f F = TooN::Zeros;
     F(0,0) = _kP;
@@ -364,7 +364,7 @@ float EdgeTracker::estimateBias(const rebvio::types::Vector3f& _sacc, const rebv
 																		 		Gtmp[1],-Gtmp[0],   0.0   );
 
     types::Matrix7f Q = TooN::Zeros;
-    float tan = std::tan(_X[0]);
+    types::Float tan = std::tan(_X[0]);
     Q(0,0) = _QKp/(1.0+tan*tan);
     Q.slice<1,1,3,3>() = GProd.T()*_Qrot*GProd+_Qg;
     Q.slice<4,4,3,3>() = _Qbias;
@@ -382,9 +382,9 @@ float EdgeTracker::estimateBias(const rebvio::types::Vector3f& _sacc, const rebv
     types::Vector7f JtF;
     kagmekbias.problem(JtJ,JtF,_X);
 
-    _P = TooN::Cholesky<7,float>(JtJ).get_inverse();
+    _P = TooN::Cholesky<7,types::Float>(JtJ).get_inverse();
 
-    float k = std::tan(_X[0]);
+    types::Float k = std::tan(_X[0]);
 
     if(k<0 || std::isnan(k) || std::isinf(k))
         k=0;
@@ -401,7 +401,7 @@ float EdgeTracker::estimateBias(const rebvio::types::Vector3f& _sacc, const rebv
 
     types::Vector6f WXc = TooN::Zeros;
     WXc.slice<3,3>() = WVBias*wc;
-    types::Vector6f Xc = TooN::Cholesky<6,float>(Wb+_Wvw).get_inverse()*(_Wvw*_Xvw +  WXc);
+    types::Vector6f Xc = TooN::Cholesky<6,types::Float>(Wb+_Wvw).get_inverse()*(_Wvw*_Xvw +  WXc);
 
     _Xvw = Xc;
 
@@ -424,23 +424,23 @@ void EdgeTracker::updateInverseDepth(rebvio::types::Vector3f& _vel) {
 }
 
 void EdgeTracker::updateInverseDepthARLU(rebvio::types::KeyLine& _keyline, rebvio::types::Vector3f& _vel) {
-	float qx = _keyline.pos_hom[0];
-	float qy = _keyline.pos_hom[1];
-	float q0x = _keyline.match_pos_hom[0];
-	float q0y = _keyline.match_pos_hom[1];
-	float v_rho = _keyline.sigma_rho*_keyline.sigma_rho;
-	float ux = _keyline.match_gradient[0]/_keyline.match_gradient_norm;
-	float uy = _keyline.match_gradient[1]/_keyline.match_gradient_norm;
-	float Y = ux*(qx-q0x)+uy*(qy-q0y);
-	float H = ux*(_vel[0]*camera_->fm_-_vel[2]*q0x)+uy*(_vel[1]*camera_->fm_-_vel[2]*q0y);
-	float rho_p = 1.0/(1.0/_keyline.rho+_vel[2]);
-	float F = 1.0/(1.0+_keyline.rho*_vel[2]);
+	types::Float qx = _keyline.pos_hom[0];
+	types::Float qy = _keyline.pos_hom[1];
+	types::Float q0x = _keyline.match_pos_hom[0];
+	types::Float q0y = _keyline.match_pos_hom[1];
+	types::Float v_rho = _keyline.sigma_rho*_keyline.sigma_rho;
+	types::Float ux = _keyline.match_gradient[0]/_keyline.match_gradient_norm;
+	types::Float uy = _keyline.match_gradient[1]/_keyline.match_gradient_norm;
+	types::Float Y = ux*(qx-q0x)+uy*(qy-q0y);
+	types::Float H = ux*(_vel[0]*camera_->fm_-_vel[2]*q0x)+uy*(_vel[1]*camera_->fm_-_vel[2]*q0y);
+	types::Float rho_p = 1.0/(1.0/_keyline.rho+_vel[2]);
+	types::Float F = 1.0/(1.0+_keyline.rho*_vel[2]);
 	F *= F;
-	float p_p = F*v_rho*F + config_.reshape_q_abs*config_.reshape_q_abs;
-	float e = Y-H*rho_p;
+	types::Float p_p = F*v_rho*F + config_.reshape_q_abs*config_.reshape_q_abs;
+	types::Float e = Y-H*rho_p;
 
-	float S = H*p_p*H + config_.pixel_uncertainty*config_.pixel_uncertainty;
-	float K = p_p*H*(1.0/S);
+	types::Float S = H*p_p*H + config_.pixel_uncertainty*config_.pixel_uncertainty;
+	types::Float K = p_p*H*(1.0/S);
 
 	_keyline.rho = rho_p+K*e;
 	v_rho = (1.0-K*H)*p_p;
@@ -462,7 +462,7 @@ KaGMEKBias::KaGMEKBias(KaGMEKBias::Config& _config) :
 
 KaGMEKBias::~KaGMEKBias() {}
 
-int KaGMEKBias::gaussNewton(rebvio::types::Vector7f& _X, int _iter_max, float _a_tol, float _r_tol) {
+int KaGMEKBias::gaussNewton(rebvio::types::Vector7f& _X, int _iter_max, types::Float _a_tol, types::Float _r_tol) {
 	types::Vector7f h;
 	types::Matrix7f JtJ;
 	types::Vector7f JtF;
@@ -480,7 +480,7 @@ int KaGMEKBias::gaussNewton(rebvio::types::Vector7f& _X, int _iter_max, float _a
 }
 
 bool KaGMEKBias::problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f& _JtF, const rebvio::types::Vector7f& _X) {
-	float a = _X[0];
+	types::Float a = _X[0];
 	rebvio::types::Vector3f g = _X.slice<1,3>();
 	rebvio::types::Vector3f b = _X.slice<4,3>();
 	rebvio::types::Vector3f& a_s = config_.a_s;
@@ -497,7 +497,7 @@ bool KaGMEKBias::problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f&
 	else if(F[4] < -M_PI)
 		F[4] += 2.0*M_PI;
 
-	TooN::SO3<float> Rb(b);
+	TooN::SO3<types::Float> Rb(b);
 	F.slice<5,3>() = Rb*g-config_.x_p.slice<1,3>();       //Error function G
 	F.slice<8,3>() = b-config_.x_p.slice<4,3>();           //Error function Bias
 
@@ -510,7 +510,7 @@ bool KaGMEKBias::problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f&
 																	-Rg[2],  0.0  ,  Rg[0], \
 																	Rg[1],-Rg[0],   0.0   );
 
-	TooN::Matrix<11,6,float> dFdx1 = TooN::Zeros;
+	TooN::Matrix<11,6,types::Float> dFdx1 = TooN::Zeros;
 	dFdx1.slice<0,0,3,3>() = TooN::Identity*std::cos(a);         //dF(0:2)/dG    measurement
 	dFdx1.slice<3,0,1,3>() = 2.0*g.as_row();            //dF(3)/dG      G module
 	dFdx1.slice<5,0,3,3>() = Rb.get_matrix();         //dF(5:7)/dG    G prior with bias rotation
@@ -525,9 +525,9 @@ bool KaGMEKBias::problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f&
 	P.slice<4,4,7,7>() = config_.Pp;
 
 	types::Matrix11f W = TooN::Zeros;
-	W.slice<0,0,3,3>() = TooN::Cholesky<3,float>(Pz).get_inverse();
+	W.slice<0,0,3,3>() = TooN::Cholesky<3,types::Float>(Pz).get_inverse();
 	W(3,3) = 1.0/config_.Rg;
-	W.slice<4,4,7,7>() = TooN::Cholesky<7,float>(config_.Pp).get_inverse();
+	W.slice<4,4,7,7>() = TooN::Cholesky<7,types::Float>(config_.Pp).get_inverse();
 
 	types::Matrix11f dPda = TooN::Zeros;
 	dPda.slice<0,0,3,3>() = 2.0*std::sin(a)*std::cos(a)*(config_.Rv-config_.Rs);
@@ -545,7 +545,7 @@ bool KaGMEKBias::problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f&
 	return true;
 }
 
-float KaGMEKBias::saturate(float _t, float _limit) {
+types::Float KaGMEKBias::saturate(types::Float _t, types::Float _limit) {
 	return (_t > _limit) ? _limit : ((_t < -_limit) ? -_limit : _t);
 }
 

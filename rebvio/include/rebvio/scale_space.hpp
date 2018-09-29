@@ -22,7 +22,7 @@ namespace rebvio {
  */
 class FastGaussian {
 public:
-	FastGaussian(rebvio::Camera::SharedPtr _cam, float _sigma, int _n=3);
+	FastGaussian(rebvio::Camera::SharedPtr _cam, types::Float _sigma, int _n=3);
 	~FastGaussian();
 
 	/**
@@ -46,8 +46,8 @@ private:
 
 public:
 	int n_;							//< Number of averagings performed to approximate the Gaussian filter
-	float sigma_;				//< Standard deviation of the approximated Gaussian filter
-	float sigma_true_;	//< True standard deviation of the approximated Gaussian filter due to rounding errors
+	types::Float sigma_;				//< Standard deviation of the approximated Gaussian filter
+	types::Float sigma_true_;	//< True standard deviation of the approximated Gaussian filter due to rounding errors
 	int* widths_;				//< Array containing the widths of the box filters
 	cv::Mat* divisors_;	//< Pre-computed divisors used by the average() method
 };

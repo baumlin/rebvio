@@ -20,7 +20,7 @@ struct DistanceFieldElement {
 
 class DistanceField {
 public:
-	DistanceField(int _rows, int _cols, float _search_range) :
+	DistanceField(int _rows, int _cols, types::Float _search_range) :
 		rows_(_rows),
 		cols_(_cols),
 		search_range_(_search_range)
@@ -48,8 +48,8 @@ public:
 			if(_map->threshold() > 0.0 && keyline.gradient_norm < _map->threshold()) continue;
 			// get index of pixels in +/- direction of keyline gradient
 			for(int r = -search_range_; r < search_range_; ++r) {
-				int field_idx = getIndex((keyline.gradient[1]/keyline.gradient_norm)*float(r)+keyline.pos[1],
-																 (keyline.gradient[0]/keyline.gradient_norm)*float(r)+keyline.pos[0]);
+				int field_idx = getIndex((keyline.gradient[1]/keyline.gradient_norm)*types::Float(r)+keyline.pos[1],
+																 (keyline.gradient[0]/keyline.gradient_norm)*types::Float(r)+keyline.pos[0]);
 				if(field_idx < 0) continue;
 				DistanceFieldElement& element = field_[field_idx];
 				if(element.id >= 0 && element.distance < std::abs(r)) continue;
@@ -64,7 +64,7 @@ public:
 	rebvio::types::EdgeMap::SharedPtr map() { return map_; }
 
 private:
-	inline int getIndex(float _row, float _col) {
+	inline int getIndex(types::Float _row, types::Float _col) {
 		int row = std::round(_row);
 		int col = std::round(_col);
 		if(row >= rows_ || row < 0 || col >= cols_ || col < 0) return -1;
@@ -75,7 +75,7 @@ private:
 	DistanceFieldElement* field_;
 	uint rows_;
 	uint cols_;
-	float search_range_;
+	types::Float search_range_;
 	rebvio::types::EdgeMap::SharedPtr map_;
 };
 
@@ -84,15 +84,15 @@ public:
 	struct Config {
 		rebvio::types::Vector3f a_v;
 		rebvio::types::Vector3f a_s;
-		float G;
+		types::Float G;
 		rebvio::types::Vector7f x_p;
 		rebvio::types::Matrix3f Rv;
 		rebvio::types::Matrix3f Rs;
-		float Rg;
+		types::Float Rg;
 		rebvio::types::Matrix7f Pp;
 
-		Config(const rebvio::types::Vector3f& _a_v, const rebvio::types::Vector3f& _a_s, float _G, const rebvio::types::Vector7f& _x_p,
-					 const rebvio::types::Matrix3f& _Rv, const rebvio::types::Matrix3f& _Rs, float _Rg, const rebvio::types::Matrix7f& _Pp) :
+		Config(const rebvio::types::Vector3f& _a_v, const rebvio::types::Vector3f& _a_s, types::Float _G, const rebvio::types::Vector7f& _x_p,
+					 const rebvio::types::Matrix3f& _Rv, const rebvio::types::Matrix3f& _Rs, types::Float _Rg, const rebvio::types::Matrix7f& _Pp) :
 						 a_v(_a_v), a_s(_a_s), G(_G), x_p(_x_p), Rv(_Rv), Rs(_Rs), Rg(_Rg), Pp(_Pp) {}
 	};
 
@@ -100,10 +100,10 @@ public:
 	KaGMEKBias(KaGMEKBias::Config& _config);
 	~KaGMEKBias();
 	bool problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f& _JtF, const rebvio::types::Vector7f& _X);
-	int gaussNewton(rebvio::types::Vector7f& _X, int _iter_max, float _a_tol = 0.0, float _r_tol = 0.0);
+	int gaussNewton(rebvio::types::Vector7f& _X, int _iter_max, types::Float _a_tol = 0.0, types::Float _r_tol = 0.0);
 
 private:
-	inline float saturate(float _t, float _limit);
+	inline types::Float saturate(types::Float _t, types::Float _limit);
 
 private:
 	KaGMEKBias::Config config_;
@@ -113,20 +113,20 @@ private:
 class EdgeTracker {
 public:
 	struct Config {
-		float search_range{40.0};				//!< Pixel search range for tracking and mapping
-		float reweight_distance{2.0}; 	//!< Reweigh error residual in Huber Loss Function
-		float match_treshold{0.5}; 			//!< Threshold on the keyline gradient dot product
-		float match_threshold_module{1.0};
-		float match_threshold_angle{45.0};
+		types::Float search_range{40.0};				//!< Pixel search range for tracking and mapping
+		types::Float reweight_distance{2.0}; 	//!< Reweigh error residual in Huber Loss Function
+		types::Float match_treshold{0.5}; 			//!< Threshold on the keyline gradient dot product
+		types::Float match_threshold_module{1.0};
+		types::Float match_threshold_angle{45.0};
 		unsigned int min_match_threshold{0}; 	//!< Minimum number of consecutive matches for a keyline
 		unsigned int iterations{5}; 						//!< Number of iterations for tracker
 		unsigned int global_min_matches_threshold{500}; //!< Minimum number of keyline matches for tracking and mapping
-		float pixel_uncertainty_match{2.0}; //!< Pixel uncertainty for the matching step
-		float pixel_uncertainty{1};	//!< Pixel uncertainty for the correction step
-		float quantile_cutoff{0.9}; //!< Percentile of the keylines to use
+		types::Float pixel_uncertainty_match{2.0}; //!< Pixel uncertainty for the matching step
+		types::Float pixel_uncertainty{1};	//!< Pixel uncertainty for the correction step
+		types::Float quantile_cutoff{0.9}; //!< Percentile of the keylines to use
 		int quantile_num_bins{100}; //!< Number of bins in the histogram for percentile calculation
-		float regularization_threshold{0.5}; //!< Edgemap regularization threshold on keyline gradient
-		float reshape_q_abs{1e-4}; //!< EKF modeled absolute error on inverse depth
+		types::Float regularization_threshold{0.5}; //!< Edgemap regularization threshold on keyline gradient
+		types::Float reshape_q_abs{1e-4}; //!< EKF modeled absolute error on inverse depth
 	};
 
 public:
@@ -140,7 +140,7 @@ public:
 	void buildDistanceField(rebvio::types::EdgeMap::SharedPtr _map);
 
 
-	static inline bool testfk(const rebvio::types::KeyLine& _keyline1, const rebvio::types::KeyLine& _keyline2, const float& _simil_t);
+	static inline bool testfk(const rebvio::types::KeyLine& _keyline1, const rebvio::types::KeyLine& _keyline2, const types::Float& _simil_t);
 
 	/**
 	 * Method to search for keyline match in distance field and calculate gradients
@@ -155,14 +155,14 @@ public:
 	 * \param _mnum Match counter
 	 * \param _fi Pixel residual
 	 */
-	float calculatefJ(rebvio::types::EdgeMap::SharedPtr _map, int _f_inx, float& _df_dx, float& _df_dy, rebvio::types::KeyLine& _keyline,
-			const float& _px, const float& _py, const float& _max_r, const float& _simil_t, int& _mnum, float& _fi);
+	types::Float calculatefJ(rebvio::types::EdgeMap::SharedPtr _map, int _f_inx, types::Float& _df_dx, types::Float& _df_dy, rebvio::types::KeyLine& _keyline,
+			const types::Float& _px, const types::Float& _py, const types::Float& _max_r, const types::Float& _simil_t, int& _mnum, types::Float& _fi);
 
-	float tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
-			 float _sigma_rho_min, float* _residuals);
+	types::Float tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
+			 types::Float _sigma_rho_min, types::Float* _residuals);
 
 
-	float minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel);
+	types::Float minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel);
 
 	bool extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Matrix6f& _Rx, rebvio::types::Vector6f& _X);
 
@@ -170,15 +170,15 @@ public:
 									 rebvio::types::Matrix3f& _Wb, const rebvio::types::Matrix3f& _Rg, const rebvio::types::Matrix3f& _Rb);
 
 	void estimateLs4Acceleration(const rebvio::types::Vector3f& _vel, rebvio::types::Vector3f& _acc,
-															 const rebvio::types::Matrix3f& _R, float _dt);
+															 const rebvio::types::Matrix3f& _R, types::Float _dt);
 
 	void estimateMeanAcceleration(const rebvio::types::Vector3f _sacc, rebvio::types::Vector3f& _acc, const rebvio::types::Matrix3f& _R);
 
-	float estimateBias(const rebvio::types::Vector3f& _sacc, const rebvio::types::Vector3f& _facc, float _kP, const rebvio::types::Matrix3f _Rot,
+	types::Float estimateBias(const rebvio::types::Vector3f& _sacc, const rebvio::types::Vector3f& _facc, types::Float _kP, const rebvio::types::Matrix3f _Rot,
 											rebvio::types::Vector7f& _X, rebvio::types::Matrix7f& _P, const rebvio::types::Matrix3f& _Qg, const rebvio::types::Matrix3f& _Qrot,
-	                    const rebvio::types::Matrix3f& _Qbias, float _QKp, float _Rg, const rebvio::types::Matrix3f& _Rs,
+	                    const rebvio::types::Matrix3f& _Qbias, types::Float _QKp, types::Float _Rg, const rebvio::types::Matrix3f& _Rs,
 											const rebvio::types::Matrix3f& _Rf, rebvio::types::Vector3f& _g_est, rebvio::types::Vector3f& _b_est, const rebvio::types::Matrix6f& _Wvw,
-											rebvio::types::Vector6f& _Xvw, float _g_gravit);
+											rebvio::types::Vector6f& _Xvw, types::Float _g_gravit);
 
 	void updateInverseDepth(rebvio::types::Vector3f& _vel);
 

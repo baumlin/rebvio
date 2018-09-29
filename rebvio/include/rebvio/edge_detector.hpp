@@ -44,13 +44,13 @@ private:
 	rebvio::ScaleSpace scale_space_;
 
 	int plane_fit_size_;							//< Half window size -1 for DoG plane fitting: (2*plane_fit_size+1)^2
-	float pos_neg_threshold_;					//< Max percentual difference for DoG nonmaximum suppression
-	float dog_threshold_;							//< Relation between DoG threshold and gradient threshold ~1/sigma0^4
-	float threshold_;									//< Manual treshold
-	float tuned_threshold_;
-	float gain_;											//< Autogain for threshold (if 0, autogain is disabled)
-	float max_threshold_;							//< Max limit for autothreshold
-	float min_threshold_;							//< Min limit for autothreshold
+	types::Float pos_neg_threshold_;					//< Max percentual difference for DoG nonmaximum suppression
+	types::Float dog_threshold_;							//< Relation between DoG threshold and gradient threshold ~1/sigma0^4
+	types::Float threshold_;									//< Manual treshold
+	types::Float tuned_threshold_;
+	types::Float gain_;											//< Autogain for threshold (if 0, autogain is disabled)
+	types::Float max_threshold_;							//< Max limit for autothreshold
+	types::Float min_threshold_;							//< Min limit for autothreshold
 	int max_image_value_;
 };
 

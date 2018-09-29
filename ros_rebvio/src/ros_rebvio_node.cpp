@@ -43,8 +43,8 @@ void image_callback(const sensor_msgs::ImageConstPtr& _msg) {
 
 void imu_callback(const sensor_msgs::ImuConstPtr& _msg) {
 	rebvio_ptr->imuCallback(rebvio::types::Imu{_msg->header.stamp.toNSec()/1000,
-		TooN::makeVector((float)_msg->angular_velocity.x,(float)_msg->angular_velocity.y,(float)_msg->angular_velocity.z),
-		TooN::makeVector((float)_msg->linear_acceleration.x,(float)_msg->linear_acceleration.y,(float)_msg->linear_acceleration.z)});
+		TooN::makeVector((rebvio::types::Float)_msg->angular_velocity.x,(rebvio::types::Float)_msg->angular_velocity.y,(rebvio::types::Float)_msg->angular_velocity.z),
+		TooN::makeVector((rebvio::types::Float)_msg->linear_acceleration.x,(rebvio::types::Float)_msg->linear_acceleration.y,(rebvio::types::Float)_msg->linear_acceleration.z)});
 }
 
 void edge_image_callback(cv::Mat& _edge_image,rebvio::types::EdgeMap::SharedPtr& _map) {

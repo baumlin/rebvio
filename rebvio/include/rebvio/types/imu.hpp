@@ -43,7 +43,7 @@ public:
 		rebvio::types::Vector3f tmp = _R_c2i.T()*_imu.gyro;
 		gyro_ += tmp;
 		acc_ += _R_c2i.T()*_imu.acc;
-		float dt;
+		types::Float dt;
 		if(last_ts_ == 0) {
 			init_ts_ = _imu.ts;
 			last_ts_ = init_ts_;
@@ -52,9 +52,9 @@ public:
 			gyro_last_ = gyro_init_;
 			R_ = TooN::Identity;
 		} else {
-			dt = float(_imu.ts-last_ts_)/1000000.0; // convert to [s]
+			dt = types::Float(_imu.ts-last_ts_)/1000000.0; // convert to [s]
 		}
-		R_ = R_*TooN::SO3<float>(tmp*dt).get_matrix();
+		R_ = R_*TooN::SO3<types::Float>(tmp*dt).get_matrix();
 		last_ts_ = _imu.ts;
 		gyro_last_ = _imu.gyro;
 	}
@@ -62,8 +62,8 @@ public:
 	const IntegratedImu& get(const rebvio::types::Matrix3f& _R_c2i, const rebvio::types::Vector3f _t_c2i) {
 		dt_ = (last_ts_-init_ts_)/(n_-1)*n_; //estimate sampling time from interval and extrapolate to include initial measurement
 		if(n_ > 1) {
-			gyro_ /= float(n_);
-			acc_ /= float(n_);
+			gyro_ /= types::Float(n_);
+			acc_ /= types::Float(n_);
 			dgyro_ = _R_c2i.T()*(gyro_last_-gyro_init_)/dt_s();
 		}
 		cacc_ = acc_+(dgyro_^(-(_R_c2i.T()*_t_c2i)));
@@ -78,8 +78,8 @@ public:
 		return dt_;
 	}
 
-	float dt_s() const {
-		return float(dt_)/1000000.0;
+	types::Float dt_s() const {
+		return types::Float(dt_)/1000000.0;
 	}
 
 	const rebvio::types::Vector3f& gyro() const {
@@ -115,16 +115,16 @@ private:
 
 struct ImuState {
 	struct ImuStateConfig {
-		float g_module{9.81}; //!< Measured gravity module
-		float g_uncertainty{2e-3}; //!< Process uncertainty on the g vector
-		float g_module_uncertainty{0.2e3}; //!< Uncertainty in the g module: keep at big value
-		float acc_std_dev{2.0e-3}; //!< Accelerometer noise std dev
-		float gyro_std_dev{1.6968e-04}; //!< Gyro noise std dev
-		float gyro_bias_std_dev{1.9393e-05}; //!< Gyro bias random walk noise
-		float vbias_std_dev{1e-7}; //!< Process uncertainty in the visual bias estimation: keep lower than the gyro_bias_std_dev
-		float scale_std_dev_mult{1e-2}; //!< Scale process uncertainty in relation to visual: use this parameter to tune filter response
-		float scale_std_dev_max{1e-4}; //!< Max scale process uncertainty
-		float scale_stdd_dev_init{1.2e-3}; //!< Initial scale process uncertainty
+		types::Float g_module{9.81}; //!< Measured gravity module
+		types::Float g_uncertainty{2e-3}; //!< Process uncertainty on the g vector
+		types::Float g_module_uncertainty{0.2e3}; //!< Uncertainty in the g module: keep at big value
+		types::Float acc_std_dev{2.0e-3}; //!< Accelerometer noise std dev
+		types::Float gyro_std_dev{1.6968e-04}; //!< Gyro noise std dev
+		types::Float gyro_bias_std_dev{1.9393e-05}; //!< Gyro bias random walk noise
+		types::Float vbias_std_dev{1e-7}; //!< Process uncertainty in the visual bias estimation: keep lower than the gyro_bias_std_dev
+		types::Float scale_std_dev_mult{1e-2}; //!< Scale process uncertainty in relation to visual: use this parameter to tune filter response
+		types::Float scale_std_dev_max{1e-4}; //!< Max scale process uncertainty
+		types::Float scale_stdd_dev_init{1.2e-3}; //!< Initial scale process uncertainty
 		int init_bias{1}; //!< 0: use initial guess, 1: use init_bias_frame_num frames to estimate bias
 		int init_bias_frame_num{10};
 		rebvio::types::Vector3f init_bias_guess{TooN::makeVector(0.0188, 0.0037, 0.0776)}; //!< Initial bias guess in camera frame
@@ -145,13 +145,13 @@ struct ImuState {
 	rebvio::types::Vector3f dWgva{TooN::Zeros};
 	rebvio::types::Vector3f Vgva{TooN::Zeros};
 
-	rebvio::types::Matrix3f P_Vg{TooN::Identity*std::numeric_limits<float>::max()}; //!< IMU Stages Velocity and Rotation Covariances
+	rebvio::types::Matrix3f P_Vg{TooN::Identity*std::numeric_limits<types::Float>::max()}; //!< IMU Stages Velocity and Rotation Covariances
 
 	rebvio::types::Matrix3f RGyro{TooN::Identity};
 	rebvio::types::Matrix3f RGBias{TooN::Identity};
 
 	rebvio::types::Vector3f Bg{TooN::Zeros};						//!< Gyro bias
-	rebvio::types::Matrix3f W_Bg{TooN::Identity*std::numeric_limits<float>::max()}; //!< Gyro bias covariance
+	rebvio::types::Matrix3f W_Bg{TooN::Identity*std::numeric_limits<types::Float>::max()}; //!< Gyro bias covariance
 
 	rebvio::types::Vector3f Av{TooN::Zeros};						//!< Visual acceleration
 	rebvio::types::Vector3f As{TooN::Zeros};						//!< Accelerometer acceleration
@@ -162,8 +162,8 @@ struct ImuState {
 	rebvio::types::Matrix3f Qg;
 	rebvio::types::Matrix3f Qbias;
 
-	float QKp;
-	float Rg;
+	types::Float QKp;
+	types::Float Rg;
 
 	rebvio::types::Matrix3f Rs;
 	rebvio::types::Matrix3f Rv;
@@ -172,7 +172,7 @@ struct ImuState {
 	rebvio::types::Vector3f b_est;
 
 	rebvio::types::Matrix3f Wvw;
-	TooN::Vector<6,float> Xvw;
+	TooN::Vector<6,types::Float> Xvw;
 
 	rebvio::types::Vector3f Posgv{TooN::Zeros};
 	rebvio::types::Vector3f Posgva{TooN::Zeros};

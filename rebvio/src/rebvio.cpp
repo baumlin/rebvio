@@ -41,10 +41,10 @@ Rebvio::~Rebvio() {
 void Rebvio::imageCallback(rebvio::types::Image&& _image) {
 	// add image to queue
 	std::lock_guard<std::mutex> guard(image_buffer_mutex_);
-//	static float K_data[9] = {camera_.fm_, 0.0, camera_.cx_, 0.0, camera_.fm_,camera_.cy_,0.0,0.0,1.0};
-//	static cv::Mat K = cv::Mat(3,3,CV_32FC1,K_data);
-//	static float D_data[5] = {camera_.k1_,camera_.k2_,camera_.p1_,camera_.p2_,camera_.k3_};
-//	static cv::Mat D = cv::Mat(1,5,CV_32FC1,D_data);
+//	static types::Float K_data[9] = {camera_.fm_, 0.0, camera_.cx_, 0.0, camera_.fm_,camera_.cy_,0.0,0.0,1.0};
+//	static cv::Mat K = cv::Mat(3,3,CV_FLOAT_PRECISION,K_data);
+//	static types::Float D_data[5] = {camera_.k1_,camera_.k2_,camera_.p1_,camera_.p2_,camera_.k3_};
+//	static cv::Mat D = cv::Mat(1,5,CV_FLOAT_PRECISION,D_data);
 	cv::Mat image_undistorted;
 //	cv::undistort(_image.data,image_undistorted,K,D);
 	image_undistorted = undistorter_.undistort(_image.data);
@@ -93,8 +93,8 @@ void Rebvio::dataAcquisitionProcess() {
 }
 
 void Rebvio::stateEstimationProcess() {
-	float Kp = 1.0, K = 1.0;
-	float P_Kp = 5e-6;
+	types::Float Kp = 1.0, K = 1.0;
+	types::Float P_Kp = 5e-6;
 
 	// estimated velocity, rotation and position
 	types::Vector3f V = TooN::Zeros;
@@ -108,7 +108,7 @@ void Rebvio::stateEstimationProcess() {
 	// rotation matrix with filter correction
 	types::Matrix3f Rgva = TooN::Identity;
 
-	types::Matrix3f P_V = TooN::Identity*std::numeric_limits<float>::max();
+	types::Matrix3f P_V = TooN::Identity*std::numeric_limits<types::Float>::max();
 	types::Matrix3f P_W = TooN::Identity*1e-10;
 
 	int num_gyro_init = 0;
@@ -131,8 +131,8 @@ void Rebvio::stateEstimationProcess() {
 		}
 
 		int klm_num = 0, num_kf_fow_m = 0, num_kf_back_m = 0;
-		P_V = TooN::Identity*std::numeric_limits<float>::max();
-		P_W = TooN::Identity*std::numeric_limits<float>::max();
+		P_V = TooN::Identity*std::numeric_limits<types::Float>::max();
+		P_W = TooN::Identity*std::numeric_limits<types::Float>::max();
 		R = TooN::Identity;
 
 
@@ -159,7 +159,7 @@ void Rebvio::stateEstimationProcess() {
 
 		// use imu rotation to apply forward pre-rotation on old keylines
 		R = imu.R();
-		R.T() = TooN::SO3<float>(imu_state_.Bg)*R.T(); // TODO: what is this?
+		R.T() = TooN::SO3<types::Float>(imu_state_.Bg)*R.T(); // TODO: what is this?
 		old_edge_map->rotateKeylines(R.T());
 
 		imu_state_.Vg = TooN::Zeros;
@@ -180,7 +180,7 @@ void Rebvio::stateEstimationProcess() {
 		W_Xgv = W_Xv;
 
 
-		float frame_dt = float(new_edge_map->ts()-old_edge_map->ts())/1000000.0; // convert to [s]
+		types::Float frame_dt = types::Float(new_edge_map->ts()-old_edge_map->ts())/1000000.0; // convert to [s]
 
 		// correct biases
 		imu_state_.RGBias = TooN::Identity*config_.imu_state_config_.gyro_bias_std_dev*config_.imu_state_config_.gyro_bias_std_dev*frame_dt*frame_dt;
@@ -193,12 +193,12 @@ void Rebvio::stateEstimationProcess() {
 
 		// extract rotation matrix
 		Rgva = R;
-		TooN::SO3<float> R0(imu_state_.dWgv);
+		TooN::SO3<types::Float> R0(imu_state_.dWgv);
 		R.T() = R0.get_matrix()*R.T();
 		imu_state_.Vgv = R0*imu_state_.Vg+imu_state_.dVgv;
 		V = imu_state_.Vgv;
-		imu_state_.Wgv = TooN::SO3<float>(R).ln();
-		R_Xgv = TooN::Cholesky<6,float>(W_Xgv).get_inverse();
+		imu_state_.Wgv = TooN::SO3<types::Float>(R).ln();
+		R_Xgv = TooN::Cholesky<6,types::Float>(W_Xgv).get_inverse();
 		P_V = R_Xgv.slice<0,0,3,3>();
 		P_W = R_Xgv.slice<3,3,3,3>();
 
@@ -217,7 +217,7 @@ void Rebvio::stateEstimationProcess() {
 			imu_state_.dVgva = Xgva.slice<0,3>();
 			imu_state_.dWgva = Xgva.slice<3,3>();
 
-			TooN::SO3<float>R0gva(imu_state_.dWgva);
+			TooN::SO3<types::Float>R0gva(imu_state_.dWgva);
 			Rgva.T() = R0gva.get_matrix()*Rgva.T();
 			imu_state_.Vgva = R0gva*imu_state_.Vg+imu_state_.dVgva;
 		} else {
@@ -232,10 +232,10 @@ void Rebvio::stateEstimationProcess() {
 
 		// check for minimization errors
 		if(TooN::isnan(V) || TooN::isnan(W)) {
-			P_V = TooN::Identity*std::numeric_limits<float>::max();
+			P_V = TooN::Identity*std::numeric_limits<types::Float>::max();
 			V = TooN::Zeros;
 			Kp = 1.0;
-			P_Kp = std::numeric_limits<float>::max();
+			P_Kp = std::numeric_limits<types::Float>::max();
 			std::cerr<<"Minimization Error occured!\n";
 			run_ = false;
 		} else {
@@ -246,10 +246,10 @@ void Rebvio::stateEstimationProcess() {
 					edge_tracker_.config().pixel_uncertainty_match);
 
 			if(klm_num < edge_tracker_.config().global_min_matches_threshold) {
-				P_V = TooN::Identity*std::numeric_limits<float>::max();
+				P_V = TooN::Identity*std::numeric_limits<types::Float>::max();
 				V = TooN::Zeros;
 				Kp = 1.0;
-				P_Kp = std::numeric_limits<float>::max();
+				P_Kp = std::numeric_limits<types::Float>::max();
 				std::cerr<<"Insufficient number of keylines matches!\n";
 				run_ = false;
 			} else {
@@ -266,8 +266,8 @@ void Rebvio::stateEstimationProcess() {
 			imu_state_.u_est = Rgva.T()*imu_state_.u_est;
 			imu_state_.u_est = imu_state_.u_est-(imu_state_.u_est*imu_state_.g_est)/(imu_state_.g_est*imu_state_.g_est)*imu_state_.g_est;
 			TooN::normalize(imu_state_.u_est);
-			types::Matrix3f PoseP1 = TooN::SO3<float>(imu_state_.g_est,TooN::makeVector(0.0f,1.0f,0.0f)).get_matrix();
-			types::Matrix3f PoseP2 = TooN::SO3<float>(PoseP1*imu_state_.u_est,TooN::makeVector(1.0f,0.0f,0.0f)).get_matrix();
+			types::Matrix3f PoseP1 = TooN::SO3<types::Float>(imu_state_.g_est,TooN::makeVector(0.0f,1.0f,0.0f)).get_matrix();
+			types::Matrix3f PoseP2 = TooN::SO3<types::Float>(PoseP1*imu_state_.u_est,TooN::makeVector(1.0f,0.0f,0.0f)).get_matrix();
 			Pose = PoseP2*PoseP1;
 			Pos += -Pose*imu_state_.Vgva*K;
 			imu_state_.Posgva = Pos;
@@ -278,9 +278,9 @@ void Rebvio::stateEstimationProcess() {
 		Odometry odometry;
 		odometry.ts = new_edge_map->ts();
 		odometry.R = R;
-		odometry.R_Lie = TooN::SO3<float>(R).ln();
+		odometry.R_Lie = TooN::SO3<types::Float>(R).ln();
 		odometry.Pose = Pose;
-		odometry.Pose_Lie = TooN::SO3<float>(Pose).ln();
+		odometry.Pose_Lie = TooN::SO3<types::Float>(Pose).ln();
 		odometry.position = Pos;
 		odometryCallback(odometry);
 

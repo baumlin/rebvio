@@ -51,7 +51,7 @@ rebvio::types::EdgeMap::SharedPtr EdgeDetector::detect(rebvio::types::Image& _im
 	scale_space_.build(_image.data);
 
 	if(gain_ > 0) {
-		threshold_ -= gain_*float(points_ref_-keylines_count_);
+		threshold_ -= gain_*types::Float(points_ref_-keylines_count_);
 		threshold_ = (threshold_ > max_threshold_) ? max_threshold_ : ((threshold_ < min_threshold_) ? min_threshold_ : threshold_);
 	}
 	buildMask(map);
@@ -69,9 +69,9 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 	keylines_count_ = 0;
 
 	static bool calc_phi = true;
-	static TooN::Matrix<TooN::Dynamic,TooN::Dynamic,float> Pinv(3,(plane_fit_size_*2+1)*(plane_fit_size_*2+1));
+	static TooN::Matrix<TooN::Dynamic,TooN::Dynamic,types::Float> Pinv(3,(plane_fit_size_*2+1)*(plane_fit_size_*2+1));
 	if(calc_phi) {
-		TooN::Matrix<TooN::Dynamic,TooN::Dynamic,float> Phi((plane_fit_size_*2+1)*(plane_fit_size_*2+1),3);
+		TooN::Matrix<TooN::Dynamic,TooN::Dynamic,types::Float> Phi((plane_fit_size_*2+1)*(plane_fit_size_*2+1),3);
 		for(int row = -plane_fit_size_,k=0; row <= plane_fit_size_; ++row) {
 			for(int col = -plane_fit_size_; col <= plane_fit_size_; ++col,++k) {
 				Phi(k,0) = col;
@@ -82,16 +82,16 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 		Pinv = types::invert(Phi.T()*Phi)*Phi.T();
 		calc_phi = false;
 	}
-	float pn_threshold = float((2.0*plane_fit_size_+1.0)*(2.0*plane_fit_size_+1.0))*pos_neg_threshold_;
-	float gradient_threshold_squared = (threshold_*max_image_value_*dog_threshold_)*(threshold_*max_image_value_*dog_threshold_);
-	float mag_threshold = (threshold_*max_image_value_)*(threshold_*max_image_value_);
+	types::Float pn_threshold = types::Float((2.0*plane_fit_size_+1.0)*(2.0*plane_fit_size_+1.0))*pos_neg_threshold_;
+	types::Float gradient_threshold_squared = (threshold_*max_image_value_*dog_threshold_)*(threshold_*max_image_value_*dog_threshold_);
+	types::Float mag_threshold = (threshold_*max_image_value_)*(threshold_*max_image_value_);
 
 	for(int row = plane_fit_size_; row < camera_->rows_-plane_fit_size_; ++row) {
 		int* km_ptr = keylines_mask_.ptr<int>(row);
-		const float* mag_ptr = scale_space_.gradient_mag_.ptr<float>(row);
-		const float* dog0_ptr = scale_space_.dog_.ptr<float>(row-1);
-		const float* dog1_ptr = scale_space_.dog_.ptr<float>(row);
-		const float* dog2_ptr = scale_space_.dog_.ptr<float>(row+1);
+		const types::Float* mag_ptr = scale_space_.gradient_mag_.ptr<types::Float>(row);
+		const types::Float* dog0_ptr = scale_space_.dog_.ptr<types::Float>(row-1);
+		const types::Float* dog1_ptr = scale_space_.dog_.ptr<types::Float>(row);
+		const types::Float* dog2_ptr = scale_space_.dog_.ptr<types::Float>(row+1);
 		for(int col = plane_fit_size_; col < camera_->cols_-plane_fit_size_; ++col) {
 			int idx = col+row*camera_->cols_;
 			km_ptr[col] = -1;
@@ -99,11 +99,11 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 			if(mag_ptr[col] < mag_threshold) continue;
 
 			int pn = 0;
-			TooN::Matrix<TooN::Dynamic,TooN::Dynamic,float> Y((plane_fit_size_*2+1)*(plane_fit_size_*2+1),1);
+			TooN::Matrix<TooN::Dynamic,TooN::Dynamic,types::Float> Y((plane_fit_size_*2+1)*(plane_fit_size_*2+1),1);
 			for(int r = -plane_fit_size_, k = 0; r <= plane_fit_size_; ++r) {
-				const float* dog_ptr = scale_space_.dog_.ptr<float>(row+r);
+				const types::Float* dog_ptr = scale_space_.dog_.ptr<types::Float>(row+r);
 				for(int c = -plane_fit_size_; c <= plane_fit_size_; ++c,++k) {
-					float dog = dog_ptr[col+c];
+					types::Float dog = dog_ptr[col+c];
 					Y(k,0) = dog;
 					pn = (dog > 0.0) ? pn+1 : pn-1;
 				}
@@ -135,9 +135,9 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 			if(fabs(pn) > pn_threshold) continue;
 
 			types::Vector3f theta = (Pinv*Y).T()[0];
-			float tmp = theta[2]/(theta[0]*theta[0]+theta[1]*theta[1]);
-			float xs = -theta[0]*tmp;
-			float ys = -theta[1]*tmp;
+			types::Float tmp = theta[2]/(theta[0]*theta[0]+theta[1]*theta[1]);
+			types::Float xs = -theta[0]*tmp;
+			types::Float ys = -theta[1]*tmp;
 
 			if(fabs(xs) > 0.5 || fabs(ys) > 0.5) continue;
 
@@ -145,7 +145,7 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 
 			if(gradient[0]*gradient[0]+gradient[1]*gradient[1] < gradient_threshold_squared) continue;
 
-			types::Vector2f position = TooN::makeVector(float(col)+xs,float(row)+ys);
+			types::Vector2f position = TooN::makeVector(types::Float(col)+xs,types::Float(row)+ys);
 			_map->keylines().emplace_back(types::KeyLine(idx,position,gradient,TooN::makeVector(position[0]-camera_->cx_,position[1]-camera_->cy_)));
 			km_ptr[col] = keylines_count_;
 			_map->mask().emplace(idx,keylines_count_);
@@ -177,8 +177,8 @@ void EdgeDetector::joinEdges(rebvio::types::EdgeMap::SharedPtr& _map) {
 
 int EdgeDetector::nextPoint(rebvio::types::EdgeMap::SharedPtr& _map, int _x, int _y, int _idx) {
 //	REBVIO_TIMER_TICK();
-	float tx = -(*_map)[_idx].gradient[1];
-	float ty = (*_map)[_idx].gradient[0];
+	types::Float tx = -(*_map)[_idx].gradient[1];
+	types::Float ty = (*_map)[_idx].gradient[0];
 	int idx;
 	if(ty>0.0) {
 		if(tx>0.0) {
@@ -208,8 +208,8 @@ int EdgeDetector::nextPoint(rebvio::types::EdgeMap::SharedPtr& _map, int _x, int
 
 void EdgeDetector::tuneThreshold(rebvio::types::EdgeMap::SharedPtr _map, int _num_bins) {
 //	REBVIO_TIMER_TICK();
-	float max_dog = (*_map)[0].gradient_norm;
-	float min_dog = max_dog;
+	types::Float max_dog = (*_map)[0].gradient_norm;
+	types::Float min_dog = max_dog;
 	for(int idx = 1; idx < _map->size(); ++idx) {
 		const types::KeyLine& keyline = (*_map)[idx];
 		if(max_dog < keyline.gradient_norm) max_dog = keyline.gradient_norm;
@@ -224,7 +224,7 @@ void EdgeDetector::tuneThreshold(rebvio::types::EdgeMap::SharedPtr _map, int _nu
 	}
 	int i = 0;
 	for(int a = 0; i < _num_bins && a < points_max_; i++, a+=histogram[i]);
-	tuned_threshold_ = max_dog - float(i*(max_dog-min_dog))/float(_num_bins);
+	tuned_threshold_ = max_dog - types::Float(i*(max_dog-min_dog))/types::Float(_num_bins);
 	_map->threshold() = tuned_threshold_;
 //	REBVIO_TIMER_TOCK();
 }

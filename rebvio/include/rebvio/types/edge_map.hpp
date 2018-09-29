@@ -30,26 +30,26 @@ public:
 	int size();
 	std::vector<rebvio::types::KeyLine>& keylines();
 	uint64_t ts();
-	float& threshold();
+	types::Float& threshold();
 	rebvio::types::IntegratedImu& imu();
 	unsigned int& matches();
 	std::unordered_map<unsigned int,unsigned int>& mask();
 
-	float estimateQuantile(float _sigma_rho_min, float _sigma_rho_max, float _percentile, int _num_bins);
+	types::Float estimateQuantile(types::Float _sigma_rho_min, types::Float _sigma_rho_max, types::Float _percentile, int _num_bins);
 	void rotateKeylines(const rebvio::types::Matrix3f& _R);
 
 	int forwardMatch(rebvio::types::EdgeMap::SharedPtr _map);
 
 	int searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel,
-									const rebvio::types::Matrix3f& _Rback, float _min_thr_mod, float _min_thr_ang, float _max_radius, float _loc_uncertainty);
+									const rebvio::types::Matrix3f& _Rback, types::Float _min_thr_mod, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty);
 
 	int directedMatch(rebvio::types::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel, const rebvio::types::Matrix3f& _Rback,
-										int& _kf_matches, float _min_thr_mod, float _min_thr_ang, float _max_radius, float _loc_uncertainty);
+										int& _kf_matches, types::Float _min_thr_mod, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty);
 
-	int regularize1Iter(float _threshold);
+	int regularize1Iter(types::Float _threshold);
 
 private:
-	inline int getIndex(float _row, float _col) {
+	inline int getIndex(types::Float _row, types::Float _col) {
 		int row = std::round(_row);
 		int col = std::round(_col);
 		if(row >= camera_->rows_ || row < 0 || col >= camera_->cols_ || col < 0) return -1;
@@ -60,7 +60,7 @@ private:
 	uint64_t ts_;
 	std::vector<rebvio::types::KeyLine> keylines_;
 	std::unordered_map<unsigned int,unsigned int> keylines_mask_; //!< A lookup table with the image index as key and keyline index in keylines_ as value
-	float threshold_; //!< Threshold for keyline detection
+	types::Float threshold_; //!< Threshold for keyline detection
 	rebvio::types::IntegratedImu imu_;
 	rebvio::Camera::SharedPtr camera_;
 	unsigned int matches_;

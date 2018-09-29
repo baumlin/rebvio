@@ -16,21 +16,21 @@ Undistorter::Undistorter(rebvio::Camera::SharedPtr _camera) :
 	for(int row = 0; row < camera_->rows_; ++row) {
 		for(int col = 0; col < camera_->cols_; ++col) {
 			Undistorter::Field& p = map_.get()[row][col];
-			float qdx = float(col)-camera_->cx_;
-			float qdy = float(row)-camera_->cy_;
+			types::Float qdx = types::Float(col)-camera_->cx_;
+			types::Float qdy = types::Float(row)-camera_->cy_;
 			distort(qdx,qdy);
-			float pdx = qdx+camera_->cx_;
-			float pdy = qdy+camera_->cy_;
+			types::Float pdx = qdx+camera_->cx_;
+			types::Float pdy = qdy+camera_->cy_;
 			p.nn_idx = getIndex(pdy,pdx);
 
-			float p00x = std::floor(pdx);
-			float p00y = std::floor(pdy);
-			float p01x = std::floor(pdx)+1;
-			float p01y = std::floor(pdy);
-			float p10x = std::floor(pdx);
-			float p10y = std::floor(pdy)+1;
-			float p11x = std::floor(pdx)+1;
-			float p11y = std::floor(pdy)+1;
+			types::Float p00x = std::floor(pdx);
+			types::Float p00y = std::floor(pdy);
+			types::Float p01x = std::floor(pdx)+1;
+			types::Float p01y = std::floor(pdy);
+			types::Float p10x = std::floor(pdx);
+			types::Float p10y = std::floor(pdy)+1;
+			types::Float p11x = std::floor(pdx)+1;
+			types::Float p11y = std::floor(pdy)+1;
 
 			p.num = 0;
 			if(isValid(p00y,p00x)) {
@@ -54,7 +54,7 @@ Undistorter::Undistorter(rebvio::Camera::SharedPtr _camera) :
 				++p.num;
 			}
 			if(p.num > 0) {
-				float sum_w = 0.0;
+				types::Float sum_w = 0.0;
 				for(int i = 0; i < p.num; ++i) {
 					sum_w += p.w[i];
 				}
@@ -70,21 +70,21 @@ Undistorter::Undistorter(rebvio::Camera::SharedPtr _camera) :
 
 Undistorter::~Undistorter() {}
 
-void Undistorter::distort(float& _x, float& _y) {
-	float xp = _x/camera_->fm_;
-	float yp = _y/camera_->fm_;
-	float r2 = xp*xp+yp*yp;
-	float xpp = xp*(1.0+r2*(camera_->k1_+r2*(camera_->k2_+r2*camera_->k3_)))+2.0*camera_->p1_*xp*yp+camera_->p2_*(r2+2.0*xp*xp);
-	float ypp = yp*(1.0+r2*(camera_->k1_+r2*(camera_->k2_+r2*camera_->k3_)))+camera_->p1_*(r2+2.0*yp*yp)+2.0*camera_->p2_*xp*yp;
+void Undistorter::distort(types::Float& _x, types::Float& _y) {
+	types::Float xp = _x/camera_->fm_;
+	types::Float yp = _y/camera_->fm_;
+	types::Float r2 = xp*xp+yp*yp;
+	types::Float xpp = xp*(1.0+r2*(camera_->k1_+r2*(camera_->k2_+r2*camera_->k3_)))+2.0*camera_->p1_*xp*yp+camera_->p2_*(r2+2.0*xp*xp);
+	types::Float ypp = yp*(1.0+r2*(camera_->k1_+r2*(camera_->k2_+r2*camera_->k3_)))+camera_->p1_*(r2+2.0*yp*yp)+2.0*camera_->p2_*xp*yp;
 
 	_x = xpp*camera_->fx_;
 	_y = ypp*camera_->fy_;
 }
 
 cv::Mat Undistorter::undistort(cv::Mat _in) {
-	cv::Mat out = cv::Mat(camera_->rows_,camera_->cols_,CV_32FC1);
+	cv::Mat out = cv::Mat(camera_->rows_,camera_->cols_,CV_FLOAT_PRECISION);
 	for(int row = 0; row < camera_->rows_; ++row) {
-		float* out_ptr = out.ptr<float>(row);
+		types::Float* out_ptr = out.ptr<types::Float>(row);
 		for(int col = 0; col < camera_->cols_; ++col) {
 			out_ptr[col] = bilinearInterpolation(_in,row,col);
 		}
@@ -92,7 +92,7 @@ cv::Mat Undistorter::undistort(cv::Mat _in) {
 	return out;
 }
 
-float Undistorter::bilinearInterpolation(cv::Mat _in, int _row, int _col) {
+types::Float Undistorter::bilinearInterpolation(cv::Mat _in, int _row, int _col) {
 	int r = 0;
 	int g = 0;
 	int b = 0;
@@ -107,7 +107,7 @@ float Undistorter::bilinearInterpolation(cv::Mat _in, int _row, int _col) {
 	g >>= i_shift;
 	b >>= i_shift;
 
-	return float(uint8_t(r)+uint8_t(g)+uint8_t(b));
+	return types::Float(uint8_t(r)+uint8_t(g)+uint8_t(b));
 }
 
 
