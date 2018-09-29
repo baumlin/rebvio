@@ -156,8 +156,8 @@ struct ImuState {
 	rebvio::types::Vector3f Av{TooN::Zeros};						//!< Visual acceleration
 	rebvio::types::Vector3f As{TooN::Zeros};						//!< Accelerometer acceleration
 
-	TooN::Vector<7,float> X;
-	TooN::Matrix<7,7,float> P;
+	rebvio::types::Vector7f X;
+	rebvio::types::Matrix7f P;
 	rebvio::types::Matrix3f Qrot;
 	rebvio::types::Matrix3f Qg;
 	rebvio::types::Matrix3f Qbias;

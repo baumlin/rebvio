@@ -13,16 +13,7 @@
 namespace rebvio {
 namespace types {
 
-struct Vector2 {
-	float x;
-	float y;
-};
 
-struct Vector3 {
-	float x;
-	float y;
-	float z;
-};
 
 using Vector2f = TooN::Vector<2,float>;
 using Vector3f = TooN::Vector<3,float>;
