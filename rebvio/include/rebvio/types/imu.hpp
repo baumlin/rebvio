@@ -47,9 +47,10 @@ public:
 		if(last_ts_ == 0) {
 			init_ts_ = _imu.ts;
 			last_ts_ = init_ts_;
-			dt = 0.0;
+			dt = 0.005;			// TODO: don't use hardcoded value
 			gyro_init_ = _imu.gyro;
 			gyro_last_ = gyro_init_;
+			R_ = TooN::Identity;
 		} else {
 			dt = float(_imu.ts-last_ts_)/1000000.0; // convert to [s]
 		}
@@ -63,13 +64,13 @@ public:
 		if(n_ > 1) {
 			gyro_ /= float(n_);
 			acc_ /= float(n_);
-
 			dgyro_ = _R_c2i.T()*(gyro_last_-gyro_init_)/dt_s();
 		}
 		cacc_ = acc_+(dgyro_^(-(_R_c2i.T()*_t_c2i)));
 		n_ = 0;
 		init_ts_ = 0;
 		last_ts_ = 0;
+
 		return *this;
 	}
 
