@@ -14,7 +14,7 @@
 namespace rebvio {
 
 /**
- * @brief Class that implements the Pinhole camera model
+ * @brief Class that implements the Pinhole camera model with extrinsics to an optional IMU
  */
 class Camera {
 public:
@@ -48,27 +48,23 @@ public:
 		return t_c2i_;
 	}
 
-	inline rebvio::types::Vector3f normalize(const rebvio::types::Vector2f& _p) const {
-		return TooN::makeVector(types::Float((_p[0]-cx_)/fm_),types::Float((_p[1]-cy_)/fm_),1.0);
-	}
-
 public:
-	types::Float fx_;
-	types::Float fy_;
-	types::Float fm_; //!< mean focal length
-	types::Float cx_;
-	types::Float cy_;
-	types::Float k1_;
-	types::Float k2_;
-	types::Float k3_;
-	types::Float p1_;
-	types::Float p2_;
-	unsigned int rows_;
-	unsigned int cols_;
+	types::Float fx_;		//!< Focal length x component
+	types::Float fy_;		//!< Focal length y component
+	types::Float fm_;		//!< Mean focal length
+	types::Float cx_;		//!< Principal point x component
+	types::Float cy_;		//!< Principal point y component
+	types::Float k1_;		//!< First radial distortion coefficient in the Rad-Tan distortion model
+	types::Float k2_;		//!< Second radial distortion coefficient in the Rad-Tan distortion model
+	types::Float k3_;		//!< Third radial distortion coefficient in the Rad-Tan distortion model
+	types::Float p1_;		//!< First tangential distortion coefficient in the Rad-Tan distortion model
+	types::Float p2_;		//!< Second tangential distortion coefficient in the Rad-Tan distortion model
+	unsigned int rows_;	//!< y-resolution
+	unsigned int cols_;	//!< x-resolution
 
 private:
-	rebvio::types::Matrix3f R_c2i_;
-	rebvio::types::Vector3f t_c2i_;
+	rebvio::types::Matrix3f R_c2i_;	//!< Rotation component of transformation from Camera to Imu frame
+	rebvio::types::Vector3f t_c2i_;	//!< Translation component of transformation from Camera to Imu frame
 };
 
 
