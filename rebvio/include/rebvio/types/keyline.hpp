@@ -38,26 +38,7 @@ struct KeyLine {
 	int match_id_forward; 	//!< ID of the matching keyline by forward matching
 	int match_id_keyframe; //!< ID of the matching keyline in the last keyframe
 	unsigned int matches;						//!< Number of consecutive matches
-	KeyLine() :
-		idx(-1),
-		pos(TooN::Zeros),
-		pos_hom(TooN::Zeros),
-		match_pos_hom(TooN::Zeros),
-		gradient(TooN::Zeros),
-		match_gradient(TooN::Zeros),
-		gradient_norm(0.0),
-		match_gradient_norm(0.0),
-		score(0.0),
-		rho(1.0),
-		sigma_rho(20.0),
-		id(-1),
-		id_prev(-1),
-		id_next(-1),
-		match_id(-1),
-		match_id_forward(-1),
-		match_id_keyframe(-1),
-		matches(0)
-	{}
+	KeyLine() = delete;
 	KeyLine(unsigned int _idx, Vector2f& _pos, Vector2f& _gradient, Vector2f&& _pos_hom) :
 		idx(_idx),
 		pos(_pos),

@@ -223,7 +223,7 @@ void EdgeDetector::tuneThreshold(rebvio::types::EdgeMap::SharedPtr _map, int _nu
 	int i = 0;
 	for(int a = 0; i < _num_bins && a < points_max_; i++, a+=histogram[i]);
 	tuned_threshold_ = max_dog - types::Float(i*(max_dog-min_dog))/types::Float(_num_bins);
-	_map->threshold() = tuned_threshold_;
+	_map->threshold(tuned_threshold_);
 //	REBVIO_TIMER_TOCK();
 }
 

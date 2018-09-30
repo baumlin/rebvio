@@ -28,18 +28,18 @@ std::vector<rebvio::types::KeyLine>& EdgeMap::keylines() { return keylines_; }
 
 uint64_t EdgeMap::ts_us() { return ts_us_; }
 
-types::Float& EdgeMap::threshold() { return threshold_; }
+const types::Float& EdgeMap::threshold() const { return threshold_; }
+
+void EdgeMap::threshold(const types::Float& _treshold) { threshold_ = _treshold; }
 
 rebvio::types::IntegratedImu& EdgeMap::imu() { return imu_; }
 
-unsigned int& EdgeMap::matches() { return matches_; }
-
 std::unordered_map<unsigned int,unsigned int>& EdgeMap::mask() { return keylines_mask_; }
 
-types::Float EdgeMap::estimateQuantile(types::Float _sigma_rho_min, types::Float _sigma_rho_max, types::Float _percentile, int _num_bins) {
+types::Float EdgeMap::estimateQuantile(types::Float _percentile, int _num_bins) {
 	int histogram[_num_bins] = {0};
 	for(int idx = 0; idx < size(); ++idx) {
-		int i = _num_bins*(keylines_[idx].sigma_rho-_sigma_rho_min)/(_sigma_rho_max-_sigma_rho_min);
+		int i = _num_bins*(keylines_[idx].sigma_rho-types::RHO_MIN)/(types::RHO_MAX-types::RHO_MIN);
 		i = (i > _num_bins-1) ? (_num_bins-1) : i;
 		i = (i < 0) ? 0 : i;
 		++histogram[i];
@@ -47,14 +47,13 @@ types::Float EdgeMap::estimateQuantile(types::Float _sigma_rho_min, types::Float
 	types::Float sigma_rho = 1e3;
 	for(int i = 0, a = 0; i < _num_bins; ++i) {
 		if(a > _percentile*size()) {
-			sigma_rho = types::Float(i)*(_sigma_rho_max-_sigma_rho_min)/types::Float(_num_bins)+_sigma_rho_min;
+			sigma_rho = types::Float(i)*(types::RHO_MAX-types::RHO_MIN)/types::Float(_num_bins)+types::RHO_MIN;
 			break;
 		}
 		a+=histogram[i];
 	}
 	return sigma_rho;
 }
-
 
 void EdgeMap::rotateKeylines(const rebvio::types::Matrix3f& _R){
 	REBVIO_TIMER_TICK();
@@ -187,7 +186,6 @@ int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::t
 
 	return -1;
 }
-
 
 int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel, const rebvio::types::Matrix3f& _Rback,
 													 int& _kf_matches, types::Float _min_thr_mod, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty) {
