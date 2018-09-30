@@ -118,6 +118,7 @@ void Rebvio::stateEstimationProcess() {
 
 
 	while(run_) {
+		REBVIO_TIMER_TICK();
 
 		// access newest and old edge map
 		rebvio::types::EdgeMap::SharedPtr new_edge_map, old_edge_map;
@@ -286,6 +287,7 @@ void Rebvio::stateEstimationProcess() {
 
 
 		++num_frames_;
+		REBVIO_TIMER_TOCK();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }

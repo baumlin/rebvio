@@ -17,7 +17,6 @@ namespace rebvio {
 
 EdgeDetector::EdgeDetector(rebvio::Camera::SharedPtr _camera) :
 	keylines_count_(0),
-	keylines_size_(50000), //50000
 	points_ref_(12000),
 	points_max_(16000),
 	plane_fit_size_(2),
@@ -47,7 +46,7 @@ cv::Mat& EdgeDetector::getMask() {
 
 rebvio::types::EdgeMap::SharedPtr EdgeDetector::detect(rebvio::types::Image& _image,int _num_bins) {
 	REBVIO_TIMER_TICK();
-	rebvio::types::EdgeMap::SharedPtr map = std::make_shared<rebvio::types::EdgeMap>(camera_,keylines_size_,_image.ts);
+	rebvio::types::EdgeMap::SharedPtr map = std::make_shared<rebvio::types::EdgeMap>(camera_,points_max_,_image.ts);
 	scale_space_.build(_image.data);
 
 	if(gain_ > 0) {
@@ -65,7 +64,6 @@ rebvio::types::EdgeMap::SharedPtr EdgeDetector::detect(rebvio::types::Image& _im
 void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 	REBVIO_TIMER_TICK();
 
-	if(points_max_ > keylines_size_) points_max_ = keylines_size_;
 	keylines_count_ = 0;
 
 	static bool calc_phi = true;

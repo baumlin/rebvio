@@ -35,7 +35,6 @@ private:
 
 private:
 	int keylines_count_;							//< Current number of detected keylines in current image
-	int keylines_size_;								//<
 	cv::Mat keylines_mask_;						//< Image mask containing the keyline IDs (-1 if no keyline)
 	int points_ref_;									//< Number of points when autothresholded
 	int points_max_;									//< Maximum number of points
