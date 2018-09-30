@@ -5,7 +5,8 @@
  *      Author: baumlin
  */
 
-#include <rebvio/edge_tracker.hpp>
+#include "rebvio/edge_tracker.hpp"
+#include "rebvio/util/timer.hpp"
 #include <TooN/SVD.h>
 #include <TooN/Cholesky.h>
 #include <TooN/helpers.h>
@@ -37,7 +38,9 @@ cv::Mat& EdgeTracker::getMask() {
 }
 
 void EdgeTracker::buildDistanceField(rebvio::types::EdgeMap::SharedPtr _map) {
+	REBVIO_TIMER_TICK();
 	distance_field_.build(_map);
+	REBVIO_TIMER_TOCK();
 }
 
 bool EdgeTracker::testfk(const rebvio::types::KeyLine& _keyline1, const rebvio::types::KeyLine& _keyline2, const types::Float& _simil_t) {
@@ -153,6 +156,7 @@ types::Float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio:
 
 types::Float EdgeTracker::minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel) {
 
+	REBVIO_TIMER_TICK();
 	types::Float sigma_rho_min = _map->estimateQuantile(rebvio::types::RHO_MIN,rebvio::types::RHO_MAX,config_.quantile_cutoff,config_.quantile_num_bins);
 
 	types::Matrix3f JtJ, ApI, JtJnew;
@@ -187,11 +191,13 @@ types::Float EdgeTracker::minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, re
 	}
 	_Rvel = types::invert(JtJ);
 
+	REBVIO_TIMER_TOCK();
 	return F;
 }
 
 bool EdgeTracker::extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Matrix6f& _Rx, rebvio::types::Vector6f& _X) {
 
+	REBVIO_TIMER_TICK();
 	int nm = 0;
 	for(int i = 0; i < distance_field_.map()->size(); ++i) {
 		if((*distance_field_.map())[i].match_id >= 0) ++nm;
@@ -237,6 +243,7 @@ bool EdgeTracker::extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio
 	}
 
 	if(j != nm) {
+		REBVIO_TIMER_TOCK();
 		std::cout<<__FILE__<<":"<<__LINE__<<": j != _map->matches()!\n";
 		return false;
 	}
@@ -251,6 +258,7 @@ bool EdgeTracker::extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio
 
 	for(int i = 0; i < _X.SizeParameter; ++i) {
 		if(std::isnan(_X[i])) {
+			REBVIO_TIMER_TOCK();
 			std::cout<<__FILE__<<":"<<__LINE__<<": NaN in _X!\n";
 			return false;
 		}
@@ -258,11 +266,13 @@ bool EdgeTracker::extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio
 	for(int row = 0; row < 6; ++row) {
 		for(int col = 0; col < 6; ++col) {
 			if(std::isnan(_Rx(row,col))) {
+				REBVIO_TIMER_TOCK();
 				std::cout<<__FILE__<<":"<<__LINE__<<": NaN in _Rx!\n";
 				return false;
 			}
 		}
 	}
+	REBVIO_TIMER_TOCK();
 
 	return true;
 }
@@ -285,6 +295,7 @@ void EdgeTracker::correctBias(rebvio::types::Vector6f& _X, rebvio::types::Matrix
 
 void EdgeTracker::estimateLs4Acceleration(const rebvio::types::Vector3f& _vel, rebvio::types::Vector3f& _acc,
 														 const rebvio::types::Matrix3f& _R, types::Float _dt) {
+
 	static types::Vector3f V = TooN::Zeros;
 	static types::Vector3f V0 = TooN::Zeros;
 	static types::Vector3f V1 = TooN::Zeros;
@@ -353,73 +364,77 @@ types::Float EdgeTracker::estimateBias(const rebvio::types::Vector3f& _sacc, con
 																	const rebvio::types::Matrix3f& _Rf, rebvio::types::Vector3f& _g_est, rebvio::types::Vector3f& _b_est, const rebvio::types::Matrix6f& _Wvw,
 																	rebvio::types::Vector6f& _Xvw, types::Float _g_gravit) {
 
-    types::Matrix7f F = TooN::Zeros;
-    F(0,0) = _kP;
-    F.slice<1,1,3,3>() = _Rot.T();
-    F.slice<4,4,3,3>() = TooN::Identity;
+	REBVIO_TIMER_TICK();
+	types::Matrix7f F = TooN::Zeros;
+	F(0,0) = _kP;
+	F.slice<1,1,3,3>() = _Rot.T();
+	F.slice<4,4,3,3>() = TooN::Identity;
 
-    types::Vector3f Gtmp = _X.slice<1,3>();
-    types::Matrix3f GProd = TooN::Data(  0.0  , Gtmp[2], -Gtmp[1],
-                         	 	 	 	 	 	 	 -Gtmp[2],  0.0  ,  Gtmp[0],
-																		 		Gtmp[1],-Gtmp[0],   0.0   );
+	types::Vector3f Gtmp = _X.slice<1,3>();
+	types::Matrix3f GProd = TooN::Data(  0.0  , Gtmp[2], -Gtmp[1],
+			-Gtmp[2],  0.0  ,  Gtmp[0],
+			Gtmp[1],-Gtmp[0],   0.0   );
 
-    types::Matrix7f Q = TooN::Zeros;
-    types::Float tan = std::tan(_X[0]);
-    Q(0,0) = _QKp/(1.0+tan*tan);
-    Q.slice<1,1,3,3>() = GProd.T()*_Qrot*GProd+_Qg;
-    Q.slice<4,4,3,3>() = _Qbias;
+	types::Matrix7f Q = TooN::Zeros;
+	types::Float tan = std::tan(_X[0]);
+	Q(0,0) = _QKp/(1.0+tan*tan);
+	Q.slice<1,1,3,3>() = GProd.T()*_Qrot*GProd+_Qg;
+	Q.slice<4,4,3,3>() = _Qbias;
 
-    _X = F*_X;
-    types::Matrix7f Pp = F*_P*F.T()+Q;
+	_X = F*_X;
+	types::Matrix7f Pp = F*_P*F.T()+Q;
 
 
-    /*Posterior estimation (non linear)*/
-    rebvio::KaGMEKBias::Config params(_facc,_sacc,_g_gravit,_X,_Rf,_Rs,_Rg,Pp);
-    rebvio::KaGMEKBias kagmekbias(params);
-    kagmekbias.gaussNewton(_X,20);
+	/*Posterior estimation (non linear)*/
+	rebvio::KaGMEKBias::Config params(_facc,_sacc,_g_gravit,_X,_Rf,_Rs,_Rg,Pp);
+	rebvio::KaGMEKBias kagmekbias(params);
+	kagmekbias.gaussNewton(_X,20);
 
-    types::Matrix7f JtJ;
-    types::Vector7f JtF;
-    kagmekbias.problem(JtJ,JtF,_X);
+	types::Matrix7f JtJ;
+	types::Vector7f JtF;
+	kagmekbias.problem(JtJ,JtF,_X);
 
-    _P = TooN::Cholesky<7,types::Float>(JtJ).get_inverse();
+	_P = TooN::Cholesky<7,types::Float>(JtJ).get_inverse();
 
-    types::Float k = std::tan(_X[0]);
+	types::Float k = std::tan(_X[0]);
 
-    if(k<0 || std::isnan(k) || std::isinf(k))
-        k=0;
+	if(k<0 || std::isnan(k) || std::isinf(k))
+		k=0;
 
-    _g_est = _X.slice<1,3>();
-    _b_est = _X.slice<4,3>();
+	_g_est = _X.slice<1,3>();
+	_b_est = _X.slice<4,3>();
 
-    types::Matrix3f WVBias = JtJ.slice<4,4,3,3>();
+	types::Matrix3f WVBias = JtJ.slice<4,4,3,3>();
 
-    types::Matrix6f Wb = TooN::Zeros;
-    Wb.slice<3,3,3,3>() = WVBias;
+	types::Matrix6f Wb = TooN::Zeros;
+	Wb.slice<3,3,3,3>() = WVBias;
 
-    types::Vector3f wc = _Xvw.slice<3,3>() - _b_est;
+	types::Vector3f wc = _Xvw.slice<3,3>() - _b_est;
 
-    types::Vector6f WXc = TooN::Zeros;
-    WXc.slice<3,3>() = WVBias*wc;
-    types::Vector6f Xc = TooN::Cholesky<6,types::Float>(Wb+_Wvw).get_inverse()*(_Wvw*_Xvw +  WXc);
+	types::Vector6f WXc = TooN::Zeros;
+	WXc.slice<3,3>() = WVBias*wc;
+	types::Vector6f Xc = TooN::Cholesky<6,types::Float>(Wb+_Wvw).get_inverse()*(_Wvw*_Xvw +  WXc);
 
-    _Xvw = Xc;
+	_Xvw = Xc;
 
-    if(TooN::isnan(_Xvw)){
+	if(TooN::isnan(_Xvw)){
 
-        std::cout<<__FILE__<<":"<<__LINE__<<":\n  k=" << k<<", _X="<<_X<<", x_p="<<params.x_p<<"\n  F="<<F<<"\n  Pp="<<Pp<<"\n  Rs="<<params.Rs<<", Rv="<<params.Rv<<"\n";
+		std::cout<<__FILE__<<":"<<__LINE__<<":\n  k=" << k<<", _X="<<_X<<", x_p="<<params.x_p<<"\n  F="<<F<<"\n  Pp="<<Pp<<"\n  Rs="<<params.Rs<<", Rv="<<params.Rv<<"\n";
 
-    }
+	}
 
-    return k;
+	REBVIO_TIMER_TOCK();
+	return k;
 }
 
 
 void EdgeTracker::updateInverseDepth(rebvio::types::Vector3f& _vel) {
+	REBVIO_TIMER_TICK();
 	for(int idx = 0; idx < distance_field_.map()->size(); ++idx) {
 		types::KeyLine& keyline = (*distance_field_.map())[idx];
 		if(keyline.match_id >= 0) updateInverseDepthARLU(keyline,_vel);
 	}
+	REBVIO_TIMER_TOCK();
 
 }
 

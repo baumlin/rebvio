@@ -6,6 +6,7 @@
  */
 
 #include "rebvio/types/edge_map.hpp"
+#include "rebvio/util/timer.hpp"
 
 namespace rebvio {
 namespace types {
@@ -56,6 +57,7 @@ types::Float EdgeMap::estimateQuantile(types::Float _sigma_rho_min, types::Float
 
 
 void EdgeMap::rotateKeylines(const rebvio::types::Matrix3f& _R){
+	REBVIO_TIMER_TICK();
 	for(rebvio::types::KeyLine& keyline : keylines_) {
 		types::Vector3f q = _R*TooN::makeVector(keyline.pos_hom[0]/camera_->fm_,keyline.pos_hom[1]/camera_->fm_,1.0);
 		if(fabs(q[2]) > 0.0) {
@@ -68,9 +70,11 @@ void EdgeMap::rotateKeylines(const rebvio::types::Matrix3f& _R){
 		keyline.gradient[0] = q[0];
 		keyline.gradient[1] = q[1];
 	}
+	REBVIO_TIMER_TOCK();
 }
 
 int EdgeMap::forwardMatch(std::shared_ptr<rebvio::types::EdgeMap> _map) {
+	REBVIO_TIMER_TICK();
 	unsigned int num_matches = 0;
 //	char count[_map->size()] = {0};
 	int nm = 0;
@@ -95,11 +99,13 @@ int EdgeMap::forwardMatch(std::shared_ptr<rebvio::types::EdgeMap> _map) {
 		++num_matches;
 	}
 	_map->matches_ = num_matches;
+	REBVIO_TIMER_TOCK();
 	return num_matches;
 }
 
 int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel,
 								const rebvio::types::Matrix3f& _Rback, types::Float _min_thr_mod, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty) {
+
 	const types::Float cang_min_edge = std::cos(_min_thr_ang*M_PI/180.0);
 
 	types::Vector3f p_m3 = _Rback*TooN::makeVector(_keyline.pos_hom[0],_keyline.pos_hom[1],camera_->fm_);
@@ -185,6 +191,8 @@ int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::t
 
 int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel, const rebvio::types::Matrix3f& _Rback,
 													 int& _kf_matches, types::Float _min_thr_mod, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty) {
+
+	REBVIO_TIMER_TICK();
 	matches_ = 0;
 	_kf_matches = 0;
 
@@ -211,10 +219,12 @@ int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const r
 		++matches_;
 	}
 
+	REBVIO_TIMER_TOCK();
 	return matches_;
 }
 
 int EdgeMap::regularize1Iter(types::Float _threshold) {
+	REBVIO_TIMER_TICK();
 	int r_num = 0;
 	types::Float r[size()];
 	types::Float s[size()];
@@ -249,6 +259,7 @@ int EdgeMap::regularize1Iter(types::Float _threshold) {
 			keylines_[idx].sigma_rho = s[idx];
 		}
 	}
+	REBVIO_TIMER_TOCK();
 	return r_num;
 }
 
