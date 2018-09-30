@@ -80,7 +80,7 @@ void Rebvio::dataAcquisitionProcess() {
 
 			std::lock_guard<std::mutex> guard(imu_buffer_mutex_);
 			while(!imu_buffer_.empty()) {
-				if(imu_buffer_.front().ts <= img.ts) {
+				if(imu_buffer_.front().ts <= img.ts_us) {
 					// integrate imu measurements
 					edge_map->imu().add(imu_buffer_.front(),camera_.getRc2i());
 					imu_buffer_.pop();
@@ -181,7 +181,7 @@ void Rebvio::stateEstimationProcess() {
 		W_Xgv = W_Xv;
 
 
-		types::Float frame_dt = types::Float(new_edge_map->ts()-old_edge_map->ts())/1000000.0; // convert to [s]
+		types::Float frame_dt = types::Float(new_edge_map->ts_us()-old_edge_map->ts_us())/1000000.0; // convert to [s]
 
 		// correct biases
 		imu_state_.RGBias = TooN::Identity*config_.imu_state_config_.gyro_bias_std_dev*config_.imu_state_config_.gyro_bias_std_dev*frame_dt*frame_dt;
@@ -277,7 +277,7 @@ void Rebvio::stateEstimationProcess() {
 		P_V /= frame_dt*frame_dt;
 
 		Odometry odometry;
-		odometry.ts = new_edge_map->ts();
+		odometry.ts = new_edge_map->ts_us();
 		odometry.R = R;
 		odometry.R_Lie = TooN::SO3<types::Float>(R).ln();
 		odometry.Pose = Pose;

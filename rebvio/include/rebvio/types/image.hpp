@@ -14,8 +14,8 @@ namespace rebvio {
 namespace types {
 
 struct Image {
-	uint64_t ts;  //!< Timestamp in [us]
-	cv::Mat data;
+	uint64_t ts_us;	//!< Timestamp in [us]
+	cv::Mat data;		//!< Image Data
 };
 
 } /* namespace types */

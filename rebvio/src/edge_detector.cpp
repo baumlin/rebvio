@@ -46,7 +46,7 @@ cv::Mat& EdgeDetector::getMask() {
 
 rebvio::types::EdgeMap::SharedPtr EdgeDetector::detect(rebvio::types::Image& _image,int _num_bins) {
 	REBVIO_TIMER_TICK();
-	rebvio::types::EdgeMap::SharedPtr map = std::make_shared<rebvio::types::EdgeMap>(camera_,points_max_,_image.ts);
+	rebvio::types::EdgeMap::SharedPtr map = std::make_shared<rebvio::types::EdgeMap>(camera_,points_max_,_image.ts_us);
 	scale_space_.build(_image.data);
 
 	if(gain_ > 0) {

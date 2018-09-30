@@ -11,9 +11,9 @@
 namespace rebvio {
 namespace types {
 
-EdgeMap::EdgeMap(std::shared_ptr<rebvio::Camera> _camera, int _size, uint64_t _ts) :
+EdgeMap::EdgeMap(std::shared_ptr<rebvio::Camera> _camera, int _size, uint64_t _ts_us) :
 		camera_(_camera),
-		ts_(_ts),
+		ts_us_(_ts_us),
 		threshold_(-1.0),
 		matches_(0)
 {
@@ -26,7 +26,7 @@ int EdgeMap::size() { return keylines_.size(); }
 
 std::vector<rebvio::types::KeyLine>& EdgeMap::keylines() { return keylines_; }
 
-uint64_t EdgeMap::ts() { return ts_; }
+uint64_t EdgeMap::ts_us() { return ts_us_; }
 
 types::Float& EdgeMap::threshold() { return threshold_; }
 

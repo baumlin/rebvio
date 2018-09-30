@@ -29,7 +29,7 @@ public:
 	rebvio::types::KeyLine& operator[](int _idx);
 	int size();
 	std::vector<rebvio::types::KeyLine>& keylines();
-	uint64_t ts();
+	uint64_t ts_us();
 	types::Float& threshold();
 	rebvio::types::IntegratedImu& imu();
 	unsigned int& matches();
@@ -57,7 +57,7 @@ private:
 	}
 
 private:
-	uint64_t ts_;
+	uint64_t ts_us_;
 	std::vector<rebvio::types::KeyLine> keylines_;
 	std::unordered_map<unsigned int,unsigned int> keylines_mask_; //!< A lookup table with the image index as key and keyline index in keylines_ as value
 	types::Float threshold_; //!< Threshold for keyline detection
