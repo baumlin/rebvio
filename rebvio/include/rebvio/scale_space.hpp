@@ -23,6 +23,7 @@ namespace rebvio {
 class FastGaussian {
 public:
 	FastGaussian(rebvio::Camera::SharedPtr _cam, types::Float _sigma, int _n=3);
+	FastGaussian() = delete;
 	~FastGaussian();
 
 	/**
@@ -45,21 +46,37 @@ private:
 	void precomputeDivisors(int _d, cv::Mat& _div);
 
 public:
-	int n_;							//< Number of averagings performed to approximate the Gaussian filter
-	types::Float sigma_;				//< Standard deviation of the approximated Gaussian filter
+	int n_;										//< Number of averagings performed to approximate the Gaussian filter
+	types::Float sigma_;			//< Standard deviation of the approximated Gaussian filter
 	types::Float sigma_true_;	//< True standard deviation of the approximated Gaussian filter due to rounding errors
-	int* widths_;				//< Array containing the widths of the box filters
-	cv::Mat* divisors_;	//< Pre-computed divisors used by the average() method
+	int* widths_;							//< Array containing the widths of the box filters
+	cv::Mat* divisors_;				//< Pre-computed divisors used by the average() method
 };
 
 /**
- * @brief Class that implements a scale space with two scales using approximate Gaussian filtering for edge detection
+ * \brief Class that implements a scale space with two scales using approximate Gaussian filtering for edge detection
  */
 class ScaleSpace {
 public:
 	ScaleSpace(rebvio::Camera::SharedPtr);
+	ScaleSpace() = delete;
 	~ScaleSpace();
+
+	/**
+	 * \brief Return the Difference of Gaussians calculated via the build() method
+	 */
+	cv::Mat dog() const;
+
+	/**
+	 * \brief Return the squared gradient magnitude of the first scale image calculated via the build() method
+	 */
+	cv::Mat mag() const;
+
+	/**
+	 * \brief Calculate the Difference of Gaussians (using the FastGaussian Filter) and squared gradient magnitude
+	 */
 	void build(cv::Mat&);
+
 
 private:
 	/**
@@ -71,12 +88,12 @@ private:
 	 */
 	void calculateGradientMagnitude();
 
-public:
-	rebvio::Camera::SharedPtr camera_;
-	rebvio::FastGaussian filter_[2];//< Array of Gaussian filters with different (increasing) sigmas used to calculate the different scales for the DoG
-	cv::Mat scale_[2];							//< Array of the scale images (with increasing sigmas) calculated using the Gaussian filters
-	cv::Mat dog_;										//< The Difference of Gaussians calculated using the different scale images
-	cv::Mat gradient_mag_; 					//< Squared gradient magnitude of the first scale image
+private:
+	rebvio::Camera::SharedPtr camera_;	//< Camera Device
+	rebvio::FastGaussian filter_[2];		//< Array of Gaussian filters with different (increasing) sigmas used to calculate the different scales for the DoG
+	cv::Mat scale_[2];									//< Array of the scale images (with increasing sigmas) calculated using the Gaussian filters
+	cv::Mat dog_;												//< The Difference of Gaussians calculated using the different scale images
+	cv::Mat gradient_mag_; 							//< Squared gradient magnitude of the first scale image
 };
 
 } /* namespace rebvio */

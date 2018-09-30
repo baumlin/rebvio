@@ -86,10 +86,10 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 
 	for(int row = plane_fit_size_; row < camera_->rows_-plane_fit_size_; ++row) {
 		int* km_ptr = keylines_mask_.ptr<int>(row);
-		const types::Float* mag_ptr = scale_space_.gradient_mag_.ptr<types::Float>(row);
-		const types::Float* dog0_ptr = scale_space_.dog_.ptr<types::Float>(row-1);
-		const types::Float* dog1_ptr = scale_space_.dog_.ptr<types::Float>(row);
-		const types::Float* dog2_ptr = scale_space_.dog_.ptr<types::Float>(row+1);
+		const types::Float* mag_ptr = scale_space_.mag().ptr<types::Float>(row);
+		const types::Float* dog0_ptr = scale_space_.dog().ptr<types::Float>(row-1);
+		const types::Float* dog1_ptr = scale_space_.dog().ptr<types::Float>(row);
+		const types::Float* dog2_ptr = scale_space_.dog().ptr<types::Float>(row+1);
 		for(int col = plane_fit_size_; col < camera_->cols_-plane_fit_size_; ++col) {
 			int idx = col+row*camera_->cols_;
 			km_ptr[col] = -1;
@@ -99,7 +99,7 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 			int pn = 0;
 			TooN::Matrix<TooN::Dynamic,TooN::Dynamic,types::Float> Y((plane_fit_size_*2+1)*(plane_fit_size_*2+1),1);
 			for(int r = -plane_fit_size_, k = 0; r <= plane_fit_size_; ++r) {
-				const types::Float* dog_ptr = scale_space_.dog_.ptr<types::Float>(row+r);
+				const types::Float* dog_ptr = scale_space_.dog().ptr<types::Float>(row+r);
 				for(int c = -plane_fit_size_; c <= plane_fit_size_; ++c,++k) {
 					types::Float dog = dog_ptr[col+c];
 					Y(k,0) = dog;

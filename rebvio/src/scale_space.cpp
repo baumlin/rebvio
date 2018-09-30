@@ -8,11 +8,10 @@
 #include "rebvio/scale_space.hpp"
 #include "rebvio/util/timer.hpp"
 #include <cmath>
-#include <iostream>
 
 namespace rebvio {
 
-FastGaussian::FastGaussian(Camera::SharedPtr _camera, types::Float _sigma,int _n) :
+FastGaussian::FastGaussian(Camera::SharedPtr _camera, types::Float _sigma, int _n) :
 		n_(_n),
 		sigma_(_sigma),
 		widths_(new int[n_])
@@ -76,15 +75,12 @@ cv::Mat FastGaussian::average(cv::Mat& _integral_image, int _d, cv::Mat& _div) {
 		const types::Float* ii_ptr = _integral_image.ptr<types::Float>(row+d2);
 		types::Float* ai_ptr = average_image.ptr<types::Float>(row);
 		for(int col = 0; col < d2+1; ++col) {
-//			average_image.at<types::Float>(row,col) = _integral_image.at<types::Float>(row+d2,col+d2)*_div.at<types::Float>(row,col);
 			ai_ptr[col] = ii_ptr[col+d2]*div_ptr[col];
 		}
 		for(int col = d2+1; col < _div.cols-d2; ++col) {
-//			average_image.at<types::Float>(row,col) = (_integral_image.at<types::Float>(row+d2,col+d2)-_integral_image.at<types::Float>(row+d2,col-d2-1))*_div.at<types::Float>(row,col);
 			ai_ptr[col] = (ii_ptr[col+d2]-ii_ptr[col-d2-1])*div_ptr[col];
 		}
 		for(int col = _div.cols-d2; col < _div.cols; ++col) {
-//			average_image.at<types::Float>(row,col) = (_integral_image.at<types::Float>(row+d2,_div.cols-1)-_integral_image.at<types::Float>(row+d2,col-d2-1))*_div.at<types::Float>(row,col);
 			ai_ptr[col] = (ii_ptr[_div.cols-1]-ii_ptr[col-d2-1])*div_ptr[col];
 		}
 	}
@@ -94,20 +90,15 @@ cv::Mat FastGaussian::average(cv::Mat& _integral_image, int _d, cv::Mat& _div) {
 		const types::Float* ii_ptr2 = _integral_image.ptr<types::Float>(row-d2-1);
 		types::Float* ai_ptr = average_image.ptr<types::Float>(row);
 		for(int col = 0; col < d2+1; ++col) {
-//			average_image.at<types::Float>(row,col) = (_integral_image.at<types::Float>(row+d2,col+d2)-_integral_image.at<types::Float>(row-d2-1,col+d2))*_div.at<types::Float>(row,col);
 			int col_idx = col+d2;
 			ai_ptr[col] = (ii_ptr1[col_idx]-ii_ptr2[col_idx])*div_ptr[col];
 		}
 		for(int col = d2+1; col < _div.cols-d2; ++col) {
-//			average_image.at<types::Float>(row,col) = (_integral_image.at<types::Float>(row+d2,col+d2)-_integral_image.at<types::Float>(row+d2,col-d2-1)
-//					-_integral_image.at<types::Float>(row-d2-1,col+d2)+_integral_image.at<types::Float>(row-d2-1,col-d2-1))*a;
 			int col_idx1 = col+d2;
 			int col_idx2 = col-d2-1;
 			ai_ptr[col] = (ii_ptr1[col_idx1]-ii_ptr1[col_idx2] - ii_ptr2[col_idx1]+ii_ptr2[col_idx2])*a;
 		}
 		for(int col = _div.cols-d2; col < _div.cols; ++col) {
-//			average_image.at<types::Float>(row,col) = (_integral_image.at<types::Float>(row+d2,_div.cols-1)-_integral_image.at<types::Float>(row+d2,col-d2-1)
-//					-_integral_image.at<types::Float>(row-d2-1,_div.cols-1)+_integral_image.at<types::Float>(row-d2-1,col-d2-1))*_div.at<types::Float>(row,col);
 			int col_idx1 = _div.cols-1;
 			int col_idx2 = col-d2-1;
 			ai_ptr[col] = (ii_ptr1[col_idx1]-ii_ptr1[col_idx2] - ii_ptr2[col_idx1]+ii_ptr2[col_idx2])*div_ptr[col];
@@ -119,20 +110,15 @@ cv::Mat FastGaussian::average(cv::Mat& _integral_image, int _d, cv::Mat& _div) {
 		const types::Float* ii_ptr2 = _integral_image.ptr<types::Float>(row-d2-1);
 		types::Float* ai_ptr = average_image.ptr<types::Float>(row);
 		for(int col = 0; col < d2+1; ++col) {
-//			average_image.at<types::Float>(row,col) = (_integral_image.at<types::Float>(_div.rows-1,col+d2)-_integral_image.at<types::Float>(row-d2-1,col+d2))*_div.at<types::Float>(row,col);
 			int col_idx = col+d2;
 			ai_ptr[col] = (ii_ptr1[col_idx]-ii_ptr2[col_idx])*div_ptr[col];
 		}
 		for(int col = d2+1; col < _div.cols-d2; ++col) {
-//			average_image.at<types::Float>(row,col) = (_integral_image.at<types::Float>(_div.rows-1,col+d2)-_integral_image.at<types::Float>(row-d2-1,col+d2)
-//					-_integral_image.at<types::Float>(_div.rows-1,col-d2-1)+_integral_image.at<types::Float>(row-d2-1,col-d2-1))*_div.at<types::Float>(row,col);
 			int col_idx1 = col+d2;
 			int col_idx2 = col-d2-1;
 			ai_ptr[col] = (ii_ptr1[col_idx1]-ii_ptr2[col_idx1] - ii_ptr1[col_idx2]+ii_ptr2[col_idx2])*div_ptr[col];
 		}
 		for(int col = _div.cols-d2; col < _div.cols; ++col) {
-//			average_image.at<types::Float>(row,col) = (_integral_image.at<types::Float>(_div.rows-1,_div.cols-1)-_integral_image.at<types::Float>(row-d2-1,_div.cols-1)
-//					-_integral_image.at<types::Float>(_div.rows-1,col-d2-1)+_integral_image.at<types::Float>(row-d2-1,col-d2-1))*_div.at<types::Float>(row,col);
 			int col_idx1 = _div.cols-1;
 			int col_idx2 = col-d2-1;
 			ai_ptr[col] = (ii_ptr1[col_idx1]-ii_ptr2[col_idx1] - ii_ptr1[col_idx2]+ii_ptr2[col_idx2])*div_ptr[col];
@@ -204,6 +190,14 @@ ScaleSpace::ScaleSpace(rebvio::Camera::SharedPtr _camera) :
 }
 
 ScaleSpace::~ScaleSpace() {
+}
+
+cv::Mat ScaleSpace::dog() const {
+	return dog_;
+}
+
+cv::Mat ScaleSpace::mag() const {
+	return gradient_mag_;
 }
 
 void ScaleSpace::build(cv::Mat& _image) {
