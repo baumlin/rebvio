@@ -58,10 +58,10 @@ types::Float EdgeMap::estimateQuantile(types::Float _percentile, int _num_bins) 
 void EdgeMap::rotateKeylines(const rebvio::types::Matrix3f& _R){
 	REBVIO_TIMER_TICK();
 	for(rebvio::types::KeyLine& keyline : keylines_) {
-		types::Vector3f q = _R*TooN::makeVector(keyline.pos_hom[0]/camera_->fm_,keyline.pos_hom[1]/camera_->fm_,1.0);
+		types::Vector3f q = _R*TooN::makeVector(keyline.pos_img[0]/camera_->fm_,keyline.pos_img[1]/camera_->fm_,1.0);
 		if(fabs(q[2]) > 0.0) {
-			keyline.pos_hom[0] = q[0]/q[2]*camera_->fm_;
-			keyline.pos_hom[1] = q[1]/q[2]*camera_->fm_;
+			keyline.pos_img[0] = q[0]/q[2]*camera_->fm_;
+			keyline.pos_img[1] = q[1]/q[2]*camera_->fm_;
 			keyline.rho /= q[2];
 			keyline.sigma_rho /= q[2];
 		}
@@ -90,7 +90,7 @@ int EdgeMap::forwardMatch(std::shared_ptr<rebvio::types::EdgeMap> _map) {
 		map_keyline.sigma_rho = keyline.sigma_rho;
 		map_keyline.matches = keyline.matches+1;
 		map_keyline.match_id = idx;
-		map_keyline.match_pos_hom = keyline.pos_hom;
+		map_keyline.match_pos_img = keyline.pos_img;
 		map_keyline.match_gradient = keyline.gradient;
 		map_keyline.match_gradient_norm = keyline.gradient_norm;
 		map_keyline.match_id_keyframe = keyline.match_id_keyframe;
@@ -107,7 +107,7 @@ int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::t
 
 	const types::Float cang_min_edge = std::cos(_min_thr_ang*M_PI/180.0);
 
-	types::Vector3f p_m3 = _Rback*TooN::makeVector(_keyline.pos_hom[0],_keyline.pos_hom[1],camera_->fm_);
+	types::Vector3f p_m3 = _Rback*TooN::makeVector(_keyline.pos_img[0],_keyline.pos_img[1],camera_->fm_);
 	types::Float pmx = p_m3[0]*camera_->fm_/p_m3[2];
 	types::Float pmy = p_m3[1]*camera_->fm_/p_m3[2];
 	types::Float k_rho = _keyline.rho*camera_->fm_/p_m3[2];
@@ -208,7 +208,7 @@ int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const r
 		keyline.sigma_rho = matched_keyline.sigma_rho;
 		keyline.match_id = idx_match;
 		keyline.matches = matched_keyline.matches+1;
-		keyline.match_pos_hom = matched_keyline.pos_hom;
+		keyline.match_pos_img = matched_keyline.pos_img;
 		keyline.match_gradient = matched_keyline.gradient;
 		keyline.match_gradient_norm = matched_keyline.gradient_norm;
 		keyline.match_id_keyframe = matched_keyline.match_id_keyframe;

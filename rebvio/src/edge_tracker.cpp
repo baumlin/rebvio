@@ -109,8 +109,8 @@ types::Float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio:
 		}
 
 		types::Float rho_p = 1.0/z_p;
-		types::Float p_x = rho_p*(_vel[0]*camera_->fm_-_vel[2]*keyline.pos_hom[0])+keyline.pos_hom[0];
-		types::Float p_y = rho_p*(_vel[1]*camera_->fm_-_vel[2]*keyline.pos_hom[1])+keyline.pos_hom[1];
+		types::Float p_x = rho_p*(_vel[0]*camera_->fm_-_vel[2]*keyline.pos_img[0])+keyline.pos_img[0];
+		types::Float p_y = rho_p*(_vel[1]*camera_->fm_-_vel[2]*keyline.pos_img[1])+keyline.pos_img[1];
 
 		types::Float p_xc = p_x + camera_->cx_;
 		types::Float p_yc = p_y + camera_->cy_;
@@ -215,11 +215,11 @@ bool EdgeTracker::extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio
 		types::Float u_y = keyline.gradient[1]/keyline.gradient_norm;
 
 		types::Float rho_t = 1.0/(1.0/keyline.rho+_vel[2]);
-		types::Float qt_x = keyline.match_pos_hom[0] + rho_t*(_vel[0]*camera_->fm_-_vel[2]*keyline.match_pos_hom[0]);
-		types::Float qt_y = keyline.match_pos_hom[1] + rho_t*(_vel[1]*camera_->fm_-_vel[2]*keyline.match_pos_hom[1]);
+		types::Float qt_x = keyline.match_pos_img[0] + rho_t*(_vel[0]*camera_->fm_-_vel[2]*keyline.match_pos_img[0]);
+		types::Float qt_y = keyline.match_pos_img[1] + rho_t*(_vel[1]*camera_->fm_-_vel[2]*keyline.match_pos_img[1]);
 
-		types::Float q_x = keyline.pos_hom[0];
-		types::Float q_y = keyline.pos_hom[1];
+		types::Float q_x = keyline.pos_img[0];
+		types::Float q_y = keyline.pos_img[1];
 
 		Phi(j,0) = u_x*rho_t*camera_->fm_;
 		Phi(j,1) = u_y*rho_t*camera_->fm_;
@@ -230,7 +230,7 @@ bool EdgeTracker::extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio
 
 		Y[j] = u_x*(q_x-qt_x)+u_y*(q_y-qt_y);
 
-		types::Float dqvel = u_x*(_vel[0]*camera_->fm_-_vel[2]*keyline.match_pos_hom[0]) + u_y*(_vel[1]*camera_->fm_-_vel[2]*keyline.match_pos_hom[1]);
+		types::Float dqvel = u_x*(_vel[0]*camera_->fm_-_vel[2]*keyline.match_pos_img[0]) + u_y*(_vel[1]*camera_->fm_-_vel[2]*keyline.match_pos_img[1]);
 		types::Float s_y = std::sqrt(keyline.sigma_rho*keyline.sigma_rho*dqvel*dqvel+config_.pixel_uncertainty*config_.pixel_uncertainty);
 
 		types::Float weight = 1.0;
@@ -439,10 +439,10 @@ void EdgeTracker::updateInverseDepth(rebvio::types::Vector3f& _vel) {
 }
 
 void EdgeTracker::updateInverseDepthARLU(rebvio::types::KeyLine& _keyline, rebvio::types::Vector3f& _vel) {
-	types::Float qx = _keyline.pos_hom[0];
-	types::Float qy = _keyline.pos_hom[1];
-	types::Float q0x = _keyline.match_pos_hom[0];
-	types::Float q0y = _keyline.match_pos_hom[1];
+	types::Float qx = _keyline.pos_img[0];
+	types::Float qy = _keyline.pos_img[1];
+	types::Float q0x = _keyline.match_pos_img[0];
+	types::Float q0y = _keyline.match_pos_img[1];
 	types::Float v_rho = _keyline.sigma_rho*_keyline.sigma_rho;
 	types::Float ux = _keyline.match_gradient[0]/_keyline.match_gradient_norm;
 	types::Float uy = _keyline.match_gradient[1]/_keyline.match_gradient_norm;

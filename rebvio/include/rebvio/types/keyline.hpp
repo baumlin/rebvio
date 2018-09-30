@@ -9,7 +9,6 @@
 #define INCLUDE_REBVIO_TYPES_KEYLINE_HPP_
 
 #include "rebvio/types/primitives.hpp"
-#include <TooN/TooN.h>
 #include <cmath>
 
 namespace rebvio {
@@ -20,30 +19,30 @@ constexpr types::Float RHO_MIN=1e-3;
 constexpr types::Float RHO_INIT=1.0;
 
 struct KeyLine {
-	Vector2f pos;
-	Vector2f pos_hom;
-	Vector2f match_pos_hom;
-	Vector2f gradient;
-	Vector2f match_gradient;
-	types::Float gradient_norm;
-	types::Float match_gradient_norm;
-	types::Float rho;
-	types::Float sigma_rho;
-	int id;					//!< ID of the keyline
-	int id_prev;			//!< ID of the previous consecutive keyline
-	int id_next;			//!< ID of the next consecutive keyline
-	int match_id; 					//!< ID of the matching keyline
-	int match_id_forward; 	//!< ID of the matching keyline by forward matching
-	int match_id_keyframe; //!< ID of the matching keyline in the last keyframe
-	unsigned int matches;						//!< Number of consecutive matches
+	Vector2f pos;                       //!< Subpixel keyline position in pixel coordinates (origin in upper left corner)
+	Vector2f pos_img;                   //!< Keyline position in image coordinates (origin at principal point)
+	Vector2f match_pos_img;             //!< Position of matched keyline in image coordinates
+	Vector2f gradient;                  //!< Keyline gradient
+	Vector2f match_gradient;            //!< Gradient of matched keyline
+	types::Float gradient_norm;         //!< Norm of keyline gradient
+	types::Float match_gradient_norm;   //!< Norm of matched keyline gradient
+	types::Float rho;                   //!< Inverse depth of keyline
+	types::Float sigma_rho;             //!< Inverse depth uncertainty of keyline
+	int id;                             //!< ID of the keyline
+	int id_prev;                        //!< ID of the previous consecutive keyline
+	int id_next;                        //!< ID of the next consecutive keyline
+	int match_id;                       //!< ID of the matching keyline
+	int match_id_forward;               //!< ID of the matching keyline by forward matching
+	int match_id_keyframe;              //!< ID of the matching keyline in the last keyframe
+	unsigned int matches;               //!< Number of consecutive matches
 	KeyLine() = delete;
-	KeyLine(Vector2f& _pos, Vector2f& _gradient, Vector2f&& _pos_hom) :
+	KeyLine(Vector2f& _pos, Vector2f& _gradient, Vector2f&& _pos_img) :
 		pos(_pos),
-		pos_hom(_pos_hom),
-		match_pos_hom(_pos_hom),
+		pos_img(_pos_img),
+		match_pos_img(_pos_img),
 		gradient(_gradient),
 		match_gradient(TooN::Zeros),
-		gradient_norm(sqrt(gradient[0]*gradient[0]+gradient[1]*gradient[1])),
+		gradient_norm(std::sqrt(gradient[0]*gradient[0]+gradient[1]*gradient[1])),
     match_gradient_norm(0.0),
 		rho(1.0),
 		sigma_rho(20.0),
