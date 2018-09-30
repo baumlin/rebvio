@@ -13,6 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   cv_bridge
   image_transport
+  tf 
+  tf_conversions
 )
 
 ## System dependencies are found with CMake's conventions
@@ -113,6 +115,8 @@ catkin_package(
   	sensor_msgs
   	cv_bridge
   	image_transport
+  	tf 
+  	tf_conversions
 #  DEPENDS system_lib
 )
 

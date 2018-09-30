@@ -11,7 +11,7 @@ include(cmake/FindTooN.cmake)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS tf tf_conversions) 
+find_package(catkin REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 find_package(OpenCV REQUIRED COMPONENTS core imgproc)
@@ -105,7 +105,7 @@ find_package(LAPACK REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS tf tf_conversions
+  CATKIN_DEPENDS
   DEPENDS OpenCV TooN
   CFG_EXTRAS ${PROJECT_NAME}.cmake
 )
