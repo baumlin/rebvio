@@ -20,7 +20,6 @@ constexpr types::Float RHO_MIN=1e-3;
 constexpr types::Float RHO_INIT=1.0;
 
 struct KeyLine {
-	unsigned int idx;
 	Vector2f pos;
 	Vector2f pos_hom;
 	Vector2f match_pos_hom;
@@ -28,7 +27,6 @@ struct KeyLine {
 	Vector2f match_gradient;
 	types::Float gradient_norm;
 	types::Float match_gradient_norm;
-	types::Float score;
 	types::Float rho;
 	types::Float sigma_rho;
 	int id;					//!< ID of the keyline
@@ -39,8 +37,7 @@ struct KeyLine {
 	int match_id_keyframe; //!< ID of the matching keyline in the last keyframe
 	unsigned int matches;						//!< Number of consecutive matches
 	KeyLine() = delete;
-	KeyLine(unsigned int _idx, Vector2f& _pos, Vector2f& _gradient, Vector2f&& _pos_hom) :
-		idx(_idx),
+	KeyLine(Vector2f& _pos, Vector2f& _gradient, Vector2f&& _pos_hom) :
 		pos(_pos),
 		pos_hom(_pos_hom),
 		match_pos_hom(_pos_hom),
@@ -48,7 +45,6 @@ struct KeyLine {
 		match_gradient(TooN::Zeros),
 		gradient_norm(sqrt(gradient[0]*gradient[0]+gradient[1]*gradient[1])),
     match_gradient_norm(0.0),
-		score(0),
 		rho(1.0),
 		sigma_rho(20.0),
 		id(-1),

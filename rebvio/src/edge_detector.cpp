@@ -144,7 +144,7 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 			if(gradient[0]*gradient[0]+gradient[1]*gradient[1] < gradient_threshold_squared) continue;
 
 			types::Vector2f position = TooN::makeVector(types::Float(col)+xs,types::Float(row)+ys);
-			_map->keylines().emplace_back(types::KeyLine(idx,position,gradient,TooN::makeVector(position[0]-camera_->cx_,position[1]-camera_->cy_)));
+			_map->keylines().emplace_back(types::KeyLine(position,gradient,TooN::makeVector(position[0]-camera_->cx_,position[1]-camera_->cy_)));
 			km_ptr[col] = keylines_count_;
 			_map->mask().emplace(idx,keylines_count_);
 			if(++keylines_count_ >= points_max_) { // now keylines_count_ == _map->size()
