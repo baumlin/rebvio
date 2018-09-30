@@ -37,24 +37,44 @@ public:
 	 */
 	void build(rebvio::types::EdgeMap::SharedPtr _map) {
 
-		map_ = _map;
 		int size = rows_*cols_;
 		for(int i = 0; i < size; ++i) field_[i].id = -1;
 
-		for(int idx = 0; idx < _map->size(); ++idx) {
+		map_ = _map;
+		int map_size = _map->size();
+		types::Float map_threshold = _map->threshold();
+		int search_range = search_range_;
+		for(int idx = 0; idx < map_size; ++idx) {
 
-			const rebvio::types::KeyLine& keyline = (*_map)[idx];
+			const rebvio::types::KeyLine& keyline = _map->operator[](idx);
 			// threshold on keyline gradient norm
-			if(_map->threshold() > 0.0 && keyline.gradient_norm < _map->threshold()) continue;
+			if(map_threshold > 0.0 && keyline.gradient_norm < map_threshold) continue;
 			// get index of pixels in +/- direction of keyline gradient
-			for(int r = -search_range_; r < search_range_; ++r) {
-				int field_idx = getIndex((keyline.gradient[1]/keyline.gradient_norm)*types::Float(r)+keyline.pos[1],
-																 (keyline.gradient[0]/keyline.gradient_norm)*types::Float(r)+keyline.pos[0]);
-				if(field_idx < 0) continue;
-				DistanceFieldElement& element = field_[field_idx];
-				if(element.id >= 0 && element.distance < std::abs(r)) continue;
-				element.distance = std::abs(r);
-				element.id = idx;
+			int field_idx = getIndex(keyline.pos[1],keyline.pos[0]);
+			if(field_idx < 0) continue;
+			DistanceFieldElement& element = field_[field_idx];
+			if(element.id >= 0 && element.distance < 0.0) continue;
+			element.distance = 0.0;
+			element.id = idx;
+			types::Float gnx = (keyline.gradient[0]/keyline.gradient_norm);
+		  types::Float gny = (keyline.gradient[1]/keyline.gradient_norm);
+			for(int r = 1; r < search_range; ++r) {
+				int field_idx_pos = getIndex(keyline.pos[1]+gny*types::Float(r),
+																		 keyline.pos[0]+gnx*types::Float(r));
+				int field_idx_neg = getIndex(keyline.pos[1]-gny*types::Float(r),
+																		 keyline.pos[0]-gnx*types::Float(r));
+				if(field_idx_pos > 0) {
+					DistanceFieldElement& element_pos = field_[field_idx_pos];
+					if(element_pos.id >= 0 && element_pos.distance < r) continue;
+					element_pos.distance = r;
+					element_pos.id = idx;
+				}
+				if(field_idx_neg > 0) {
+					DistanceFieldElement& element_neg = field_[field_idx_neg];
+					if(element_neg.id >= 0 && element_neg.distance < r) continue;
+					element_neg.distance = r;
+					element_neg.id = idx;
+				}
 			}
 		}
 	}
