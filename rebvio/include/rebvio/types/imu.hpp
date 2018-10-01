@@ -8,22 +8,29 @@
 #ifndef INCLUDE_REBVIO_IMU_DATA_HPP_
 #define INCLUDE_REBVIO_IMU_DATA_HPP_
 
-#include "rebvio/types/primitives.hpp"
 #include "rebvio/camera.hpp"
 #include <cmath>
 #include <limits.h>
+#include <rebvio/types/definitions.hpp>
 
 #include <TooN/so3.h>
 
 namespace rebvio {
 namespace types {
 
+/**
+ * \brief Struct holding a IMU measurement
+ */
 struct Imu {
-	uint64_t ts;					//!< Timestamp in [us]
-	rebvio::types::Vector3f gyro;
-	rebvio::types::Vector3f acc;
+	uint64_t ts;                    //!< Timestamp in [us]
+	rebvio::types::Vector3f gyro;   //!< Gyroscope measurement in [rad/s]
+	rebvio::types::Vector3f acc;    //!< Accelerometer measurement in [m/s^2]
 
 };
+
+/**
+ * \brief Class for IMU measurement integration
+ */
 
 class IntegratedImu {
 public:
@@ -38,6 +45,9 @@ public:
 		dgyro_(TooN::Zeros),
 		cacc_(TooN::Zeros) {}
 
+	/**
+	 * \brief Adds a new IMU measurement to the Integrator, without actually performing the integration (see get() method)
+	 */
 	void add(rebvio::types::Imu& _imu, const rebvio::types::Matrix3f& _R_c2i) {
 		++n_;
 		rebvio::types::Vector3f tmp = _R_c2i.T()*_imu.gyro;
@@ -59,8 +69,11 @@ public:
 		gyro_last_ = _imu.gyro;
 	}
 
+	/**
+	 * \brief Calculates and returns the integrated IMU measurements. Only call this once for an integration interval! Otherwise use the getters
+	 */
 	const IntegratedImu& get(const rebvio::types::Matrix3f& _R_c2i, const rebvio::types::Vector3f _t_c2i) {
-		dt_ = (last_ts_-init_ts_)/(n_-1)*n_; //estimate sampling time from interval and extrapolate to include initial measurement
+		dt_ = (last_ts_-init_ts_)/(n_-1)*n_; // estimate sampling time from interval and extrapolate to include initial measurement
 		if(n_ > 1) {
 			gyro_ /= types::Float(n_);
 			acc_ /= types::Float(n_);
@@ -74,106 +87,109 @@ public:
 		return *this;
 	}
 
+	/**
+	 * \brief Returns the estimated sampling interval in [us]
+	 */
 	const uint64_t& dt_us() const {
 		return dt_;
 	}
 
+	/**
+	 * \brief Returns the estimated sampling interval in [s]
+	 */
 	types::Float dt_s() const {
 		return types::Float(dt_)/1000000.0;
 	}
 
+	/**
+	 * \brief Returns the estimated gyro measurement
+	 */
 	const rebvio::types::Vector3f& gyro() const {
 		return gyro_;
 	}
 
+	/**
+	 * \brief Returns the estimated accelerometer measurement
+	 */
 	const rebvio::types::Vector3f& acc() const {
 		return acc_;
 	}
 
+	/**
+	 * \brief Returns the estimated compensated accelerometer measurement
+	 */
 	const rebvio::types::Vector3f& cacc() const {
 		return cacc_;
 	}
 
+	/**
+	 * \brief Returns the estimated Rotation
+	 */
 	const rebvio::types::Matrix3f& R() const {
 		return R_;
 	}
 
 private:
-	unsigned int n_;
-	uint64_t last_ts_;				//!< Timestamp of last measurement [us]
-	uint64_t init_ts_; 				//!< Timestamp of first measurement [us]
-	uint64_t dt_;							//!< Duration of integration interval in [us]
+	unsigned int n_;                     //!< Number of IMU measurements used for integration
+	uint64_t last_ts_;                   //!< Timestamp of last measurement [us]
+	uint64_t init_ts_;                   //!< Timestamp of first measurement [us]
+	uint64_t dt_;                        //!< IMU sampling time in [us]
 
-	rebvio::types::Matrix3f R_;	//!< Interframe rotation
-	rebvio::types::Vector3f gyro_;	  //!< Mean gyro measurement
-	rebvio::types::Vector3f gyro_init_;	  //!< First gyro measurement
-	rebvio::types::Vector3f gyro_last_;	  //!< Last gyro measurement
-	rebvio::types::Vector3f acc_;		//!< Mean accelerometer measurement
-	rebvio::types::Vector3f dgyro_;	//!< Mean gyro angular acceleration
-	rebvio::types::Vector3f cacc_;		//!< Compensated acceleration
+	rebvio::types::Matrix3f R_;          //!< Interframe rotation (between first and last measurement in integration interval)
+	rebvio::types::Vector3f gyro_;       //!< Mean gyro measurement
+	rebvio::types::Vector3f gyro_init_;  //!< First gyro measurement
+	rebvio::types::Vector3f gyro_last_;  //!< Last gyro measurement
+	rebvio::types::Vector3f acc_;        //!< Mean accelerometer measurement
+	rebvio::types::Vector3f dgyro_;      //!< Mean gyro angular acceleration
+	rebvio::types::Vector3f cacc_;       //!< Compensated acceleration
 };
 
 struct ImuState {
 	struct ImuStateConfig {
-		types::Float g_module{9.81}; //!< Measured gravity module
-		types::Float g_uncertainty{2e-3}; //!< Process uncertainty on the g vector
-		types::Float g_module_uncertainty{0.2e3}; //!< Uncertainty in the g module: keep at big value
-		types::Float acc_std_dev{2.0e-3}; //!< Accelerometer noise std dev
-		types::Float gyro_std_dev{1.6968e-04}; //!< Gyro noise std dev
-		types::Float gyro_bias_std_dev{1.9393e-05}; //!< Gyro bias random walk noise
-		types::Float vbias_std_dev{1e-7}; //!< Process uncertainty in the visual bias estimation: keep lower than the gyro_bias_std_dev
-		types::Float scale_std_dev_mult{1e-2}; //!< Scale process uncertainty in relation to visual: use this parameter to tune filter response
-		types::Float scale_std_dev_max{1e-4}; //!< Max scale process uncertainty
-		types::Float scale_stdd_dev_init{1.2e-3}; //!< Initial scale process uncertainty
-		int init_bias{1}; //!< 0: use initial guess, 1: use init_bias_frame_num frames to estimate bias
-		int init_bias_frame_num{10};
+		types::Float g_module{9.81};                 //!< Measured gravity module
+		types::Float g_uncertainty{2e-3};            //!< Process uncertainty on the g vector
+		types::Float g_module_uncertainty{0.2e3};    //!< Uncertainty in the g module: keep at big value
+		types::Float acc_std_dev{2.0e-3};            //!< Accelerometer noise std dev
+		types::Float gyro_std_dev{1.6968e-04};       //!< Gyro noise std dev
+		types::Float gyro_bias_std_dev{1.9393e-05};  //!< Gyro bias random walk noise
+		types::Float vbias_std_dev{1e-7};            //!< Process uncertainty in the visual bias estimation: keep lower than the gyro_bias_std_dev
+		types::Float scale_std_dev_mult{1e-2};       //!< Scale process uncertainty in relation to visual: use this parameter to tune filter response
+		types::Float scale_std_dev_max{1e-4};        //!< Max scale process uncertainty
+		types::Float scale_stdd_dev_init{1.2e-3};    //!< Initial scale process uncertainty
+		int init_bias{1};                            //!< 0: use initial guess, 1: use init_bias_frame_num frames to estimate bias
+		int init_bias_frame_num{10};                 //!< Number of frames to estimate the bias
 		rebvio::types::Vector3f init_bias_guess{TooN::makeVector(0.0188, 0.0037, 0.0776)}; //!< Initial bias guess in camera frame
 	};
 
 	rebvio::types::Vector3f Vg{TooN::Zeros}; //!< IMU Stages Velocity and Rotation
-
 	rebvio::types::Vector3f dVv{TooN::Zeros};
 	rebvio::types::Vector3f dWv{TooN::Zeros};
-
 	rebvio::types::Vector3f dVgv{TooN::Zeros};
 	rebvio::types::Vector3f dWgv{TooN::Zeros};
-
 	rebvio::types::Vector3f Vgv{TooN::Zeros};
 	rebvio::types::Vector3f Wgv{TooN::Zeros};
-
 	rebvio::types::Vector3f dVgva{TooN::Zeros};
 	rebvio::types::Vector3f dWgva{TooN::Zeros};
 	rebvio::types::Vector3f Vgva{TooN::Zeros};
-
 	rebvio::types::Matrix3f P_Vg{TooN::Identity*std::numeric_limits<types::Float>::max()}; //!< IMU Stages Velocity and Rotation Covariances
-
 	rebvio::types::Matrix3f RGyro{TooN::Identity};
 	rebvio::types::Matrix3f RGBias{TooN::Identity};
-
 	rebvio::types::Vector3f Bg{TooN::Zeros};						//!< Gyro bias
 	rebvio::types::Matrix3f W_Bg{TooN::Identity*std::numeric_limits<types::Float>::max()}; //!< Gyro bias covariance
-
 	rebvio::types::Vector3f Av{TooN::Zeros};						//!< Visual acceleration
 	rebvio::types::Vector3f As{TooN::Zeros};						//!< Accelerometer acceleration
-
 	rebvio::types::Vector7f X;
 	rebvio::types::Matrix7f P;
 	rebvio::types::Matrix3f Qrot;
 	rebvio::types::Matrix3f Qg;
 	rebvio::types::Matrix3f Qbias;
-
 	types::Float QKp;
 	types::Float Rg;
-
 	rebvio::types::Matrix3f Rs;
 	rebvio::types::Matrix3f Rv;
 	rebvio::types::Vector3f g_est;
 	rebvio::types::Vector3f u_est;
 	rebvio::types::Vector3f b_est;
-
-	rebvio::types::Matrix3f Wvw;
-	TooN::Vector<6,types::Float> Xvw;
-
 	rebvio::types::Vector3f Posgv{TooN::Zeros};
 	rebvio::types::Vector3f Posgva{TooN::Zeros};
 

@@ -5,8 +5,8 @@
  *      _inuthor: baumlin
  */
 
-#ifndef INCLUDE_REBVIO_TYPES_PRIMITIVES_HPP_
-#define INCLUDE_REBVIO_TYPES_PRIMITIVES_HPP_
+#ifndef INCLUDE_REBVIO_TYPES_DEFINITIONS_HPP_
+#define INCLUDE_REBVIO_TYPES_DEFINITIONS_HPP_
 
 #include <TooN/TooN.h>
 #include <opencv2/core.hpp>
@@ -55,4 +55,4 @@ inline Matrix3f invert(const rebvio::types::Matrix3f& _in) {
 
 
 
-#endif /* INCLUDE_REBVIO_TYPES_PRIMITIVES_HPP_ */
+#endif /* INCLUDE_REBVIO_TYPES_DEFINITIONS_HPP_ */

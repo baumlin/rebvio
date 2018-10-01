@@ -5,11 +5,10 @@
  *      Author: baumlin
  */
 
+#include <rebvio/types/definitions.hpp>
 #include "rebvio/edge_detector.hpp"
 #include "rebvio/types/edge_map.hpp"
 #include "rebvio/util/timer.hpp"
-#include "rebvio/types/primitives.hpp"
-
 #include <iostream>
 #include <memory>
 

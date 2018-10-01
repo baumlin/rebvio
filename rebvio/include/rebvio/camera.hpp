@@ -8,8 +8,8 @@
 #ifndef INCLUDE_REBVIO_CAMERA_HPP_
 #define INCLUDE_REBVIO_CAMERA_HPP_
 
+#include <rebvio/types/definitions.hpp>
 #include <memory>
-#include "rebvio/types/primitives.hpp"
 
 namespace rebvio {
 

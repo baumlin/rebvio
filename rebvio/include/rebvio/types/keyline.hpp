@@ -8,7 +8,7 @@
 #ifndef INCLUDE_REBVIO_TYPES_KEYLINE_HPP_
 #define INCLUDE_REBVIO_TYPES_KEYLINE_HPP_
 
-#include "rebvio/types/primitives.hpp"
+#include <rebvio/types/definitions.hpp>
 #include <cmath>
 
 namespace rebvio {
