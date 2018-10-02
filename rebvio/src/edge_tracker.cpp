@@ -16,7 +16,6 @@ namespace rebvio {
 
 EdgeTracker::EdgeTracker(rebvio::Camera::SharedPtr _camera) :
 	camera_(_camera),
-	detector_(camera_),
 	distance_field_(camera_->rows_,camera_->cols_,config_.search_range),
 	frame_count_(0)
 {
@@ -29,29 +28,21 @@ EdgeTracker::~EdgeTracker() {
 
 EdgeTracker::Config& EdgeTracker::config() { return config_; }
 
-rebvio::types::EdgeMap::SharedPtr EdgeTracker::detect(rebvio::types::Image& _image,int _num_bins) {
-	return detector_.detect(_image,_num_bins);
-}
-
-cv::Mat& EdgeTracker::getMask() {
-	return detector_.getMask();
-}
-
 void EdgeTracker::buildDistanceField(rebvio::types::EdgeMap::SharedPtr _map) {
 	REBVIO_TIMER_TICK();
 	distance_field_.build(_map);
 	REBVIO_TIMER_TOCK();
 }
 
-bool EdgeTracker::testfk(const rebvio::types::KeyLine& _keyline1, const rebvio::types::KeyLine& _keyline2, const types::Float& _simil_t) {
+bool EdgeTracker::testfk(const rebvio::types::KeyLine& _keyline1, const rebvio::types::KeyLine& _keyline2, const types::Float& _similarity_threshold) {
 	types::Float norm_squared = _keyline2.gradient_norm*_keyline2.gradient_norm;
 	types::Float dot_product = _keyline1.gradient[0]*_keyline2.gradient[0]+_keyline1.gradient[1]*_keyline2.gradient[1];
-	if(std::fabs(dot_product-norm_squared) > _simil_t*norm_squared)	return false; // |g1*g2 - g2*g2|/(g2*g2) > threshold ?
+	if(std::fabs(dot_product-norm_squared) > _similarity_threshold*norm_squared)	return false; // |g1*g2 - g2*g2|/(g2*g2) > threshold ?
 	return true;
 }
 
 types::Float EdgeTracker::calculatefJ(rebvio::types::EdgeMap::SharedPtr _map, int _f_inx, types::Float& _df_dx, types::Float& _df_dy, rebvio::types::KeyLine& _keyline,
-		const types::Float& _px, const types::Float& _py, const types::Float& _max_r, const types::Float& _simil_t, int& _mnum, types::Float& _fi) {
+		const types::Float& _px, const types::Float& _py, int& _mnum, types::Float& _fi) {
 
 	if(distance_field_[_f_inx].id < 0) {
 		_df_dx = 0.0;
@@ -60,7 +51,7 @@ types::Float EdgeTracker::calculatefJ(rebvio::types::EdgeMap::SharedPtr _map, in
 	}
 
 	const types::KeyLine& keyline = (*(distance_field_.map()))[distance_field_[_f_inx].id];
-	if(!EdgeTracker::testfk(keyline,_keyline,_simil_t)) {
+	if(!EdgeTracker::testfk(keyline,_keyline,config_.match_treshold)) {
 		_df_dx = 0.0;
 		_df_dy = 0.0;
 		return config_.search_range/_keyline.sigma_rho;
@@ -127,7 +118,7 @@ types::Float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio:
 		types::Float df_dx;
 		types::Float df_dy;
 		types::Float fi;
-		f = calculatefJ(_map,y*camera_->cols_+x,df_dx,df_dy,keyline,p_xc,p_yc,config_.search_range,config_.match_treshold,mnum,fi);
+		f = calculatefJ(_map,y*camera_->cols_+x,df_dx,df_dy,keyline,p_xc,p_yc,mnum,fi);
 		f *= weight;
 		score += f*f;
 		types::Float jx = rho_p*camera_->fm_*df_dx*weight;
@@ -478,15 +469,17 @@ KaGMEKBias::KaGMEKBias(KaGMEKBias::Config& _config) :
 KaGMEKBias::~KaGMEKBias() {}
 
 int KaGMEKBias::gaussNewton(rebvio::types::Vector7f& _X, int _iter_max, types::Float _a_tol, types::Float _r_tol) {
+
+	// Solving the problem JtJ*h = -JtF for h (correction applied to the state _X to get it closer to solution)
 	types::Vector7f h;
-	types::Matrix7f JtJ;
-	types::Vector7f JtF;
+	types::Matrix7f JtJ; // Product of transposed jacobian with itself: J^T*J
+	types::Vector7f JtF; // Product of transposed jacobian with the residual vector F = f(_X), where f(_X) is the nonlinear error function
 
 	int i = 0;
 	for(; i < _iter_max; ++i) {
 		problem(JtJ,JtF,_X);
 		TooN::SVD<7> solution(JtJ);
-		h = solution.backsub(-JtF);
+		h = solution.backsub(-JtF);  // compute h = JtJ^(-1) * -JtF
 		_X += h;
 		_X = TooN::makeVector(std::atan2(std::sin(_X[0]),std::cos(_X[0])),_X[1],_X[2],_X[3],saturate(_X[4],5e-1/25),saturate(_X[5],5e-1/25),saturate(_X[6],5e-1/25));
 		if(TooN::norm(h) < _a_tol || TooN::norm(h)/(TooN::norm(_X)+1e-20) < _r_tol) break;
@@ -495,58 +488,63 @@ int KaGMEKBias::gaussNewton(rebvio::types::Vector7f& _X, int _iter_max, types::F
 }
 
 bool KaGMEKBias::problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f& _JtF, const rebvio::types::Vector7f& _X) {
+
+	// Solves the weighted least-squares problem (J^T * W^T * W * J)*h = -J^T*(W^T*W)*F for h
 	types::Float a = _X[0];
 	rebvio::types::Vector3f g = _X.slice<1,3>();
 	rebvio::types::Vector3f b = _X.slice<4,3>();
 	rebvio::types::Vector3f& a_s = config_.a_s;
 	rebvio::types::Vector3f& a_v = config_.a_v;
 
+	// Nonlinear error function vector (augmented with the gravity-corrected acceleration in polar coordinates and the squared norm of standard gravity)
+	// F = [r; g; alpha; gravity; visual rotation bias]
 	rebvio::types::Vector11f F = TooN::Zeros;
-	F.slice<0,3>() = (a_s+g)*std::cos(a)-a_v*std::sin(a);
-	F[3]=g*g-config_.G*config_.G;
-
-	F[4] = _X[0]-config_.x_p[0];                        //Error function Angle
-
-	if(F[4] > M_PI)                               //Error correction on the angle (cyclicity)
+	F.slice<0,3>() = (a_s+g)*std::cos(a)-a_v*std::sin(a);  // Error function gravity-corrected acceleration in polar coordinates
+	F[3]=g*g-config_.G*config_.G;                          // Error function squared norm of standard gravity
+	F[4] = _X[0]-config_.x_p[0];                           // Error function angle
+	if(F[4] > M_PI)                                        // Error correction on the angle (due to cyclicity)
 		F[4] -= 2.0*M_PI;
 	else if(F[4] < -M_PI)
 		F[4] += 2.0*M_PI;
-
 	TooN::SO3<types::Float> Rb(b);
-	F.slice<5,3>() = Rb*g-config_.x_p.slice<1,3>();       //Error function G
-	F.slice<8,3>() = b-config_.x_p.slice<4,3>();           //Error function Bias
+	F.slice<5,3>() = Rb*g-config_.x_p.slice<1,3>();        // Error function gravity
+	F.slice<8,3>() = b-config_.x_p.slice<4,3>();           // Error function visual rotation bias
 
-	types::Vector11f dFda = TooN::Zeros;  // Derivative of F w.r.t. a
+	// Derivative of F w.r.t. a
+	types::Vector11f dFda = TooN::Zeros;
 	dFda.slice<0,3>() = -(a_s+g)*std::sin(a)-a_v*std::cos(a);
 	dFda[4] = 1.0;
 
-	types::Vector3f Rg = Rb*g;
-	types::Matrix3f Gx = TooN::Data(  0.0  , Rg[2], -Rg[1], \
-																	-Rg[2],  0.0  ,  Rg[0], \
-																	Rg[1],-Rg[0],   0.0   );
-
+	// Derivative of F w.r.t. gravity and visual rotation bias
 	TooN::Matrix<11,6,types::Float> dFdx1 = TooN::Zeros;
-	dFdx1.slice<0,0,3,3>() = TooN::Identity*std::cos(a);         //dF(0:2)/dG    measurement
-	dFdx1.slice<3,0,1,3>() = 2.0*g.as_row();            //dF(3)/dG      G module
-	dFdx1.slice<5,0,3,3>() = Rb.get_matrix();         //dF(5:7)/dG    G prior with bias rotation
-	dFdx1.slice<5,3,3,3>() = Gx;                      //dF(5:7)/db    derivative of G prior with rotation
-	dFdx1.slice<8,3,3,3>() = TooN::Identity;                //dF(8:10)/db   b prior
+	types::Vector3f Rg = Rb*g;
+	types::Matrix3f Gx = TooN::Data( 0.0  , Rg[2], -Rg[1],
+																	-Rg[2],  0.0 ,  Rg[0],
+																	 Rg[1],-Rg[0],   0.0  );
+	dFdx1.slice<0,0,3,3>() = TooN::Identity*std::cos(a);
+	dFdx1.slice<3,0,1,3>() = 2.0*g.as_row();
+	dFdx1.slice<5,0,3,3>() = Rb.get_matrix();
+	dFdx1.slice<5,3,3,3>() = Gx;
+	dFdx1.slice<8,3,3,3>() = TooN::Identity;
 
-	types::Matrix3f Pz = std::sin(a)*std::sin(a)*config_.Rv+std::cos(a)*std::cos(a)*config_.Rs;
-
+	// Calculate the covariance matrix P
 	types::Matrix11f P = TooN::Zeros;
+	types::Matrix3f Pz = std::sin(a)*std::sin(a)*config_.Rv+std::cos(a)*std::cos(a)*config_.Rs;
 	P.slice<0,0,3,3>() = Pz;
 	P(3,3) = config_.Rg;
 	P.slice<4,4,7,7>() = config_.Pp;
 
+	// W is the inverse of the covariance matrix P for the weighted least-squares problem
 	types::Matrix11f W = TooN::Zeros;
 	W.slice<0,0,3,3>() = TooN::Cholesky<3,types::Float>(Pz).get_inverse();
 	W(3,3) = 1.0/config_.Rg;
 	W.slice<4,4,7,7>() = TooN::Cholesky<7,types::Float>(config_.Pp).get_inverse();
 
+	// Derivative of P w.r.t. a
 	types::Matrix11f dPda = TooN::Zeros;
 	dPda.slice<0,0,3,3>() = 2.0*std::sin(a)*std::cos(a)*(config_.Rv-config_.Rs);
 
+	// Derivative of W w.r.t. a
 	types::Matrix11f dWda = -W*dPda*W;
 
 	_JtJ(0,0) = 0.25*F*dWda*P*dWda*F+dFda*dWda*F+dFda*W*dFda;

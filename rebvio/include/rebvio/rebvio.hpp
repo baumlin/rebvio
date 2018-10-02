@@ -9,6 +9,7 @@
 #define REBVIO_HPP_
 
 #include "rebvio/rebvio_params.hpp"
+#include "rebvio/edge_detector.hpp"
 #include "rebvio/edge_tracker.hpp"
 #include "rebvio/camera.hpp"
 #include "rebvio/types/image.hpp"
@@ -58,11 +59,12 @@ private:
 	std::thread state_estimation_thread_;
 	bool run_;
 
-	uint num_frames_;
+	unsigned int num_frames_;
 
 
 	rebvio::RebvioParams config_;
 	rebvio::Camera camera_;
+	rebvio::EdgeDetector edge_detector_;
 	rebvio::EdgeTracker edge_tracker_;
 	rebvio::types::ImuState imu_state_;
 	rebvio::Undistorter undistorter_;

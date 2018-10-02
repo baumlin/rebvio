@@ -21,6 +21,7 @@ Rebvio::Rebvio(rebvio::RebvioParams _params) :
 		params_(_params),
 		run_(true),
 		num_frames_(0),
+		edge_detector_(std::make_shared<rebvio::Camera>(camera_)),
 		edge_tracker_(std::make_shared<rebvio::Camera>(camera_)),
 		imu_state_(_params.imu_state_config_),
 		undistorter_(std::make_shared<rebvio::Camera>(camera_))
@@ -66,7 +67,7 @@ void Rebvio::dataAcquisitionProcess() {
 				img = image_buffer_.front();
 				image_buffer_.pop();
 			}
-			rebvio::types::EdgeMap::SharedPtr edge_map = edge_tracker_.detect(img,100);
+			rebvio::types::EdgeMap::SharedPtr edge_map = edge_detector_.detect(img,100);
 			edgeImageCallback(img.data,edge_map);
 			{
 				std::lock_guard<std::mutex> guard(edge_map_buffer_mutex_);

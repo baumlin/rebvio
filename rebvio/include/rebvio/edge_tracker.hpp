@@ -9,7 +9,6 @@
 #define INCLUDE_REBVIO_EDGE_TRACKER_HPP_
 
 #include "rebvio/types/edge_map.hpp"
-#include "rebvio/edge_detector.hpp"
 
 namespace rebvio {
 
@@ -73,8 +72,8 @@ private:
 
 private:
 	DistanceFieldElement* field_;
-	uint rows_;
-	uint cols_;
+	unsigned int rows_;
+	unsigned int cols_;
 	types::Float search_range_;
 	rebvio::types::EdgeMap::SharedPtr map_;
 };
@@ -138,8 +137,6 @@ public:
 
 	EdgeTracker::Config& config();
 
-	rebvio::types::EdgeMap::SharedPtr detect(rebvio::types::Image&,int);
-	cv::Mat& getMask();
 
 	/**
 	 * \brief Build the distance field of the edge map
@@ -147,8 +144,13 @@ public:
 	 */
 	void buildDistanceField(rebvio::types::EdgeMap::SharedPtr _map);
 
-
-	static inline bool testfk(const rebvio::types::KeyLine& _keyline1, const rebvio::types::KeyLine& _keyline2, const types::Float& _simil_t);
+	/**
+	 * \brief Method to test the gradients of two keylines for similarity
+	 * \param _keyline1 First keyline with gradient g1
+	 * \param _keyline2 Second keyline with gradient g2
+	 * \param _similarity_threshold Similarity threshold s.t. the test is passed if |g1*g2 - g2*g2|/(g2*g2) > threshold
+	 */
+	static inline bool testfk(const rebvio::types::KeyLine& _keyline1, const rebvio::types::KeyLine& _keyline2, const types::Float& _similarity_threshold);
 
 	/**
 	 * Method to search for keyline match in distance field and calculate gradients
@@ -158,14 +160,17 @@ public:
 	 * \param keyline Keyline
 	 * \param _px Keyline x position with origin in principal point
 	 * \param _py Keyline y position with origin in principal point
-	 * \param _max_r Maximum allowed radius
-	 * \param _simil_t Match threshold
 	 * \param _mnum Match counter
 	 * \param _fi Pixel residual
+	 * \return Weighted residual (weighted by inverse depth uncertainty)
 	 */
 	types::Float calculatefJ(rebvio::types::EdgeMap::SharedPtr _map, int _f_inx, types::Float& _df_dx, types::Float& _df_dy, rebvio::types::KeyLine& _keyline,
-			const types::Float& _px, const types::Float& _py, const types::Float& _max_r, const types::Float& _simil_t, int& _mnum, types::Float& _fi);
+			const types::Float& _px, const types::Float& _py, int& _mnum, types::Float& _fi);
 
+	/**
+	 * \brief
+	 * \param Score
+	 */
 	types::Float tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
 			 types::Float _sigma_rho_min, types::Float* _residuals);
 
@@ -223,7 +228,6 @@ public:
 private:
 	EdgeTracker::Config config_;             //!< Configuration parameters
 	rebvio::Camera::SharedPtr camera_;       //!< Camera device
-	rebvio::EdgeDetector detector_;          //!< Edge detector
 	rebvio::DistanceField distance_field_;   //!< Distance field for pose estimation
 	unsigned int frame_count_;               //!< Number of frame minimizations performed
 
