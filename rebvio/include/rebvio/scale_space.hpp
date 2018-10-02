@@ -9,7 +9,6 @@
 #define INCLUDE_REBVIO_SCALE_SPACE_HPP_
 
 #include "rebvio/camera.hpp"
-#include "rebvio/types/image.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -17,7 +16,7 @@ namespace rebvio {
 
 
 /**
- * @brief Class that implements "Fast Almost-Gaussian Filtering" (P. Kovesi, 2010)
+ * \brief Class that implements "Fast Almost-Gaussian Filtering" (P. Kovesi, 2010)
  * Gaussian filtering is approximated using repeated filtering with averaging filters at a fixed cost per pixel independent of the filter size.
  */
 class FastGaussian {

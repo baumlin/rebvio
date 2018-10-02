@@ -135,6 +135,9 @@ public:
 	EdgeTracker() = delete;
 	~EdgeTracker();
 
+	/**
+	 * \brief Returns a reference to the configuration parameters
+	 */
 	EdgeTracker::Config& config();
 
 
