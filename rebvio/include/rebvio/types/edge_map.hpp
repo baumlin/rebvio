@@ -86,16 +86,18 @@ public:
 	 * \brief Search for a match of _keyline (from another map) in this map
 	 */
 	int searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel,
-									const rebvio::types::Matrix3f& _Rback, types::Float _min_thr_mod, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty);
+									const rebvio::types::Matrix3f& _Rback, types::Float _min_thr_norm, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty);
 
 	/**
 	 * \brief Search keyline matches of this map with keylines in _map, given additional information regarding the extrinsics between the maps
 	 */
 	int directedMatch(rebvio::types::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel, const rebvio::types::Matrix3f& _Rback,
-										int& _kf_matches, types::Float _min_thr_mod, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty);
+										int& _kf_matches, types::Float _min_thr_norm, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty);
 
 	/**
-	 * \brief Regularize the inverse depth quantities (rho, sigma_rho) of this edge map
+	 * \brief Regularize the inverse depth quantities (rho, sigma_rho) of this edge map using a weighted mean of the depths of the two neighbours of a keyline
+	 * \param _threshold Angular threshold: _threshold = cos(beta), where beta is the angle between the gradients of the two neightbours of a keyline
+	 * \return Number or regularized keylines
 	 */
 	int regularize1Iter(types::Float _threshold);
 

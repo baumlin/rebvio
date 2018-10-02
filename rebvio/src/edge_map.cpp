@@ -103,7 +103,7 @@ int EdgeMap::forwardMatch(std::shared_ptr<rebvio::types::EdgeMap> _map) {
 }
 
 int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel,
-								const rebvio::types::Matrix3f& _Rback, types::Float _min_thr_mod, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty) {
+								const rebvio::types::Matrix3f& _Rback, types::Float _min_thr_norm, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty) {
 
 	const types::Float cang_min_edge = std::cos(_min_thr_ang*M_PI/180.0);
 
@@ -173,7 +173,7 @@ int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::t
 				const types::KeyLine& keyline = keylines_[search->second];
 
 				types::Float cang = (keyline.gradient[0]*_keyline.gradient[0]+keyline.gradient[1]*_keyline.gradient[1])/(keyline.gradient_norm*_keyline.gradient_norm);
-				if(cang < cang_min_edge || std::fabs(keyline.gradient_norm/_keyline.gradient_norm-1.0) > _min_thr_mod) continue;
+				if(cang < cang_min_edge || std::fabs(keyline.gradient_norm/_keyline.gradient_norm-1.0) > _min_thr_norm) continue;
 
 				types::Float v_rho_dr = (_loc_uncertainty*_loc_uncertainty+keyline.sigma_rho*keyline.sigma_rho*norm_t*norm_t+sigma2_t*keyline.rho*keyline.rho);
 				if((t-norm_t*keyline.rho)*(t-norm_t*keyline.rho) > v_rho_dr) continue;
@@ -188,7 +188,7 @@ int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::t
 }
 
 int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel, const rebvio::types::Matrix3f& _Rback,
-													 int& _kf_matches, types::Float _min_thr_mod, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty) {
+													 int& _kf_matches, types::Float _min_thr_norm, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty) {
 
 	REBVIO_TIMER_TICK();
 	matches_ = 0;
@@ -200,7 +200,7 @@ int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const r
 	for(int idx = 0; idx < size(); ++idx) {
 
 		types::KeyLine& keyline = keylines_[idx];
-		int idx_match = _map->searchMatch(keyline,vel,Rvel,_Rback,_min_thr_mod,_min_thr_ang,_max_radius,_loc_uncertainty);
+		int idx_match = _map->searchMatch(keyline,vel,Rvel,_Rback,_min_thr_norm,_min_thr_ang,_max_radius,_loc_uncertainty);
 		if(idx_match < 0) continue;
 
 		const types::KeyLine& matched_keyline = (*_map)[idx_match];
@@ -235,8 +235,11 @@ int EdgeMap::regularize1Iter(types::Float _threshold) {
 
 		types::KeyLine& keyline_next = keylines_[keyline.id_next];
 		types::KeyLine& keyline_prev = keylines_[keyline.id_prev];
+
+		// First propabilistic test using inverse depth and its uncertainty
 		if((keyline_next.rho-keyline_prev.rho)*(keyline_next.rho-keyline_prev.rho) > (keyline_next.sigma_rho*keyline_next.sigma_rho+keyline_prev.sigma_rho*keyline_prev.sigma_rho)) continue;
 
+		// Second morphological test using gradients
 		types::Float alpha = (keyline_next.gradient[0]*keyline_prev.gradient[0]+keyline_next.gradient[1]*keyline_prev.gradient[1])/(keyline_next.gradient_norm*keyline_prev.gradient_norm);
 		if(alpha < _threshold) continue;
 

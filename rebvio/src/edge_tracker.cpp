@@ -516,7 +516,7 @@ bool KaGMEKBias::problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f&
 	F.slice<5,3>() = Rb*g-config_.x_p.slice<1,3>();       //Error function G
 	F.slice<8,3>() = b-config_.x_p.slice<4,3>();           //Error function Bias
 
-	types::Vector11f dFda = TooN::Zeros;                          //
+	types::Vector11f dFda = TooN::Zeros;  // Derivative of F w.r.t. a
 	dFda.slice<0,3>() = -(a_s+g)*std::sin(a)-a_v*std::cos(a);
 	dFda[4] = 1.0;
 

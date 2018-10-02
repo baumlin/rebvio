@@ -49,20 +49,25 @@ public:
 	 * \brief Adds a new IMU measurement to the Integrator, without actually performing the integration (see get() method)
 	 */
 	void add(rebvio::types::Imu& _imu, const rebvio::types::Matrix3f& _R_c2i) {
-		++n_;
 		rebvio::types::Vector3f tmp = _R_c2i.T()*_imu.gyro;
-		gyro_ += tmp;
-		acc_ += _R_c2i.T()*_imu.acc;
 		types::Float dt;
 		if(last_ts_ == 0) {
+			n_ = 1;
 			init_ts_ = _imu.ts;
 			last_ts_ = init_ts_;
 			dt = 0.005;			// TODO: don't use hardcoded value
 			gyro_init_ = _imu.gyro;
 			gyro_last_ = gyro_init_;
 			R_ = TooN::Identity;
+			gyro_ = tmp;
+			acc_ = _R_c2i.T()*_imu.acc;
+			dgyro_ = TooN::Zeros;
+			cacc_ = TooN::Zeros;
 		} else {
+			++n_;
 			dt = types::Float(_imu.ts-last_ts_)/1000000.0; // convert to [s]
+			gyro_ += tmp;
+			acc_ += _R_c2i.T()*_imu.acc;
 		}
 		R_ = R_*TooN::SO3<types::Float>(tmp*dt).get_matrix();
 		last_ts_ = _imu.ts;
@@ -88,14 +93,14 @@ public:
 	}
 
 	/**
-	 * \brief Returns the estimated sampling interval in [us]
+	 * \brief Returns the integration interval in [us]
 	 */
 	const uint64_t& dt_us() const {
 		return dt_;
 	}
 
 	/**
-	 * \brief Returns the estimated sampling interval in [s]
+	 * \brief Returns the integration interval in [s]
 	 */
 	types::Float dt_s() const {
 		return types::Float(dt_)/1000000.0;
@@ -146,9 +151,9 @@ private:
 
 struct ImuState {
 	struct ImuStateConfig {
-		types::Float g_module{9.81};                 //!< Measured gravity module
+		types::Float g_norm{9.81};                   //!< Measured gravity norm
 		types::Float g_uncertainty{2e-3};            //!< Process uncertainty on the g vector
-		types::Float g_module_uncertainty{0.2e3};    //!< Uncertainty in the g module: keep at big value
+		types::Float g_norm_uncertainty{0.2e3};    //!< Uncertainty in the g norm: keep at big value
 		types::Float acc_std_dev{2.0e-3};            //!< Accelerometer noise std dev
 		types::Float gyro_std_dev{1.6968e-04};       //!< Gyro noise std dev
 		types::Float gyro_bias_std_dev{1.9393e-05};  //!< Gyro bias random walk noise
@@ -161,47 +166,43 @@ struct ImuState {
 		rebvio::types::Vector3f init_bias_guess{TooN::makeVector(0.0188, 0.0037, 0.0776)}; //!< Initial bias guess in camera frame
 	};
 
-	rebvio::types::Vector3f Vg{TooN::Zeros}; //!< IMU Stages Velocity and Rotation
-	rebvio::types::Vector3f dVv{TooN::Zeros};
-	rebvio::types::Vector3f dWv{TooN::Zeros};
-	rebvio::types::Vector3f dVgv{TooN::Zeros};
-	rebvio::types::Vector3f dWgv{TooN::Zeros};
-	rebvio::types::Vector3f Vgv{TooN::Zeros};
-	rebvio::types::Vector3f Wgv{TooN::Zeros};
-	rebvio::types::Vector3f dVgva{TooN::Zeros};
-	rebvio::types::Vector3f dWgva{TooN::Zeros};
-	rebvio::types::Vector3f Vgva{TooN::Zeros};
-	rebvio::types::Matrix3f P_Vg{TooN::Identity*std::numeric_limits<types::Float>::max()}; //!< IMU Stages Velocity and Rotation Covariances
-	rebvio::types::Matrix3f RGyro{TooN::Identity};
-	rebvio::types::Matrix3f RGBias{TooN::Identity};
-	rebvio::types::Vector3f Bg{TooN::Zeros};						//!< Gyro bias
+	rebvio::types::Vector3f Vg{TooN::Zeros};            //!< Inter-frame translation from gyro prior
+	rebvio::types::Matrix3f P_Vg{TooN::Identity*std::numeric_limits<types::Float>::max()}; //!< Inter-frame translation Covariance from gyro prior
+	rebvio::types::Vector3f Vgv{TooN::Zeros};						//!< Inter-frame translation from gyro and visual input
+	rebvio::types::Vector3f dVgv{TooN::Zeros};          //!< Correction of inter-frame translation from visual input
+	rebvio::types::Vector3f dWgv{TooN::Zeros};          //!< Correction of inter-frame rotation from visual input
+	rebvio::types::Vector3f Vgva{TooN::Zeros};          //!< Inter-frame translation from gyro, visual and accelerometer input
+	rebvio::types::Vector3f dVgva{TooN::Zeros};         //!< Correction of inter-frame translation from accelerometer input
+	rebvio::types::Vector3f dWgva{TooN::Zeros};         //!< Correction of inter-frame rotation from accelerometer input
+	rebvio::types::Vector3f Bg{TooN::Zeros};            //!< Gyro bias
 	rebvio::types::Matrix3f W_Bg{TooN::Identity*std::numeric_limits<types::Float>::max()}; //!< Gyro bias covariance
-	rebvio::types::Vector3f Av{TooN::Zeros};						//!< Visual acceleration
-	rebvio::types::Vector3f As{TooN::Zeros};						//!< Accelerometer acceleration
-	rebvio::types::Vector7f X;
-	rebvio::types::Matrix7f P;
-	rebvio::types::Matrix3f Qrot;
-	rebvio::types::Matrix3f Qg;
-	rebvio::types::Matrix3f Qbias;
-	types::Float QKp;
-	types::Float Rg;
-	rebvio::types::Matrix3f Rs;
-	rebvio::types::Matrix3f Rv;
-	rebvio::types::Vector3f g_est;
-	rebvio::types::Vector3f u_est;
-	rebvio::types::Vector3f b_est;
-	rebvio::types::Vector3f Posgv{TooN::Zeros};
-	rebvio::types::Vector3f Posgva{TooN::Zeros};
+	rebvio::types::Matrix3f RGyro{TooN::Identity};      //!< Gyro measurement covariance
+	rebvio::types::Matrix3f RGBias{TooN::Identity};     //!< Gyro bias covariance
+	rebvio::types::Vector3f Av{TooN::Zeros};            //!< Visual acceleration (calculated via numerical differentiation of the velocity estimate)
+	rebvio::types::Vector3f As{TooN::Zeros};            //!< Gravity-corrected acceleration
+
+	rebvio::types::Vector7f X;      //!< State of the scale filter: X = [g,a,b] with g: estimated gravity vector, a: angle scale, b: visual rotation bias vector
+	rebvio::types::Vector3f g_est;  //!< Estimated gravity state of the scale filter
+	rebvio::types::Vector3f b_est;  //!< Estimated visual rotation bias state of the scale filter
+	rebvio::types::Matrix7f P;      //!< State covariance matrix of the scale filter
+	rebvio::types::Matrix3f Qrot;   //!< Process covariance of
+	rebvio::types::Matrix3f Qg;     //!< Process covariance of gravity vector state
+	rebvio::types::Matrix3f Qbias;  //!< Process covariance of visual rotation bias vector state
+	types::Float QKp;               //!< Process variance of angle scale state
+	types::Float Rg;                //!< Observation noise of the standard gravity (norm of the gravitational acceleration)
+	rebvio::types::Matrix3f Rs;     //!< Observation noise of the gravity-corrected acceleration
+	rebvio::types::Matrix3f Rv;     //!< Observation noise of the visual acceleration
+	rebvio::types::Vector3f u_est;  //!<
 
 	bool initialized{false};
 
 	ImuState(ImuStateConfig& _config) {
 		W_Bg = types::invert(100.0*RGBias);
 		Qg = TooN::Identity*_config.g_uncertainty*_config.g_uncertainty;
-		Rg = _config.g_module_uncertainty*_config.g_module_uncertainty;
+		Rg = _config.g_norm_uncertainty*_config.g_norm_uncertainty;
 		Rs = TooN::Identity*_config.acc_std_dev*_config.acc_std_dev;
 		Qbias = TooN::Identity*_config.vbias_std_dev*_config.vbias_std_dev;
-		X  = TooN::makeVector(M_PI_4,0.0,_config.g_module,0.0,0.0,0.0,0.0);
+		X  = TooN::makeVector(M_PI_4,0.0,_config.g_norm,0.0,0.0,0.0,0.0);
 		P = TooN::makeVector(_config.scale_stdd_dev_init*_config.scale_stdd_dev_init,
 				100.0,
 				100.0,

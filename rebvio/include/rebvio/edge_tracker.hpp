@@ -82,22 +82,24 @@ private:
 class KaGMEKBias {
 public:
 	struct Config {
-		rebvio::types::Vector3f a_v;
-		rebvio::types::Vector3f a_s;
-		types::Float G;
-		rebvio::types::Vector7f x_p;
-		rebvio::types::Matrix3f Rv;
-		rebvio::types::Matrix3f Rs;
-		types::Float Rg;
-		rebvio::types::Matrix7f Pp;
+		rebvio::types::Vector3f a_v;    //!< Visual acceleration
+		rebvio::types::Vector3f a_s;    //!< Gravity-corrected acceleration
+		types::Float G;                 //!< Standard gravity (norm of gravitational acceleration)
+		rebvio::types::Vector7f x_p;    //!< Prior filter state
+		rebvio::types::Matrix7f Pp;     //!< Prior filter state covariance
+		rebvio::types::Matrix3f Rv;     //!< Observation noise of visual acceleration
+		rebvio::types::Matrix3f Rs;     //!< Observation noise of gravity-corrected acceleration
+		types::Float Rg;                //!< Observation noise of standard gravity
 
 		Config(const rebvio::types::Vector3f& _a_v, const rebvio::types::Vector3f& _a_s, types::Float _G, const rebvio::types::Vector7f& _x_p,
 					 const rebvio::types::Matrix3f& _Rv, const rebvio::types::Matrix3f& _Rs, types::Float _Rg, const rebvio::types::Matrix7f& _Pp) :
 						 a_v(_a_v), a_s(_a_s), G(_G), x_p(_x_p), Rv(_Rv), Rs(_Rs), Rg(_Rg), Pp(_Pp) {}
+		Config() = delete;
 	};
 
 public:
 	KaGMEKBias(KaGMEKBias::Config& _config);
+	KaGMEKBias() = delete;
 	~KaGMEKBias();
 	bool problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f& _JtF, const rebvio::types::Vector7f& _X);
 	int gaussNewton(rebvio::types::Vector7f& _X, int _iter_max, types::Float _a_tol = 0.0, types::Float _r_tol = 0.0);
@@ -113,30 +115,36 @@ private:
 class EdgeTracker {
 public:
 	struct Config {
-		types::Float search_range{40.0};				//!< Pixel search range for tracking and mapping
-		types::Float reweight_distance{2.0}; 	//!< Reweigh error residual in Huber Loss Function
-		types::Float match_treshold{0.5}; 			//!< Threshold on the keyline gradient dot product
-		types::Float match_threshold_module{1.0};
-		types::Float match_threshold_angle{45.0};
-		unsigned int min_match_threshold{0}; 	//!< Minimum number of consecutive matches for a keyline
-		unsigned int iterations{5}; 						//!< Number of iterations for tracker
-		unsigned int global_min_matches_threshold{500}; //!< Minimum number of keyline matches for tracking and mapping
-		types::Float pixel_uncertainty_match{2.0}; //!< Pixel uncertainty for the matching step
-		types::Float pixel_uncertainty{1};	//!< Pixel uncertainty for the correction step
-		types::Float quantile_cutoff{0.9}; //!< Percentile of the keylines to use
-		int quantile_num_bins{100}; //!< Number of bins in the histogram for percentile calculation
-		types::Float regularization_threshold{0.5}; //!< Edgemap regularization threshold on keyline gradient
-		types::Float reshape_q_abs{1e-4}; //!< EKF modeled absolute error on inverse depth
+		types::Float search_range{40.0};                 //!< Pixel search range for tracking and mapping
+		types::Float reweight_distance{2.0};             //!< Reweigh error residual in Huber Loss Function
+		types::Float match_treshold{0.5};                //!< Threshold on the keyline gradient dot product
+		types::Float match_threshold_norm{1.0};          //!< Relative norm threshold between two keyline gradients for keyline matching
+		types::Float match_threshold_angle{45.0};        //!< Angle threshold [deg] between two keyline gradients for keyline matching
+		unsigned int min_match_threshold{0};             //!< Minimum number of consecutive matches for a keyline
+		unsigned int iterations{5};                      //!< Number of iterations for tracker
+		unsigned int global_min_matches_threshold{500};  //!< Minimum number of keyline matches for tracking and mapping
+		types::Float pixel_uncertainty_match{2.0};       //!< Pixel uncertainty for the matching step
+		types::Float pixel_uncertainty{1};               //!< Pixel uncertainty for the correction step
+		types::Float quantile_cutoff{0.9};               //!< Percentile of the keylines to use
+		int quantile_num_bins{100};                      //!< Number of bins in the histogram for percentile calculation
+		types::Float regularization_threshold{0.5};      //!< Edgemap regularization threshold on angle beta between neighboring keyline gradients (threshold = cos(beta))
+		types::Float reshape_q_abs{1e-4};                //!< EKF modeled absolute error on inverse depth
 	};
 
 public:
 	EdgeTracker(rebvio::Camera::SharedPtr);
+	EdgeTracker() = delete;
 	~EdgeTracker();
 
 	EdgeTracker::Config& config();
 
 	rebvio::types::EdgeMap::SharedPtr detect(rebvio::types::Image&,int);
 	cv::Mat& getMask();
+
+	/**
+	 * \brief Build the distance field of the edge map
+	 * \param _map Edge map to build the distance field
+	 */
 	void buildDistanceField(rebvio::types::EdgeMap::SharedPtr _map);
 
 
@@ -161,11 +169,35 @@ public:
 	types::Float tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
 			 types::Float _sigma_rho_min, types::Float* _residuals);
 
-
+	/**
+	 * \brief Method to estimate the translational component of the rigid transformation between the input edge map and the edge map used to build the distance field
+	 * \param _map Edge map to use for minimization with distance field (which is built with a different edge map)
+	 * \param _vel Estimated translation
+	 * \param _Rvel Estimated translation uncertainty
+	 * \return Minimization score
+	 */
 	types::Float minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel);
 
+	/**
+	 * \brief Method to estimate the full rigid transform (rotation and translation) between the input edge map and the edge map used to build the distance field, using a linear approximation
+	 * \param _map Edge map to use for minimization with distance field (which is built with a different edge map)
+	 * \param _vel Prior translation estimate
+	 * \param _Wx Output information matrix
+	 * \param _Rx Inverse of output information matrix
+	 * \param _X Output incremental state
+	 * \return Success of estimation (true if successful)
+	 */
 	bool extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Matrix6f& _Rx, rebvio::types::Vector6f& _X);
 
+	/**
+	 * \brief Method to correct the estimated rigid transform using the gyro prior
+	 * \param _X Rigid transform that is to be bias corrected
+	 * \param _Wx Estimated and output state information matrix
+	 * \param _Gb Estimated and output bias
+	 * \param _Wb Estimated and output state information matrix
+	 * \param _Rg Gyro measurement covariance matrix
+	 * \param _Rb Gyro bias covariance matrix
+	 */
 	void correctBias(rebvio::types::Vector6f& _X, rebvio::types::Matrix6f& _Wx, rebvio::types::Vector3f& _Gb,
 									 rebvio::types::Matrix3f& _Wb, const rebvio::types::Matrix3f& _Rg, const rebvio::types::Matrix3f& _Rb);
 
@@ -180,16 +212,20 @@ public:
 											const rebvio::types::Matrix3f& _Rf, rebvio::types::Vector3f& _g_est, rebvio::types::Vector3f& _b_est, const rebvio::types::Matrix6f& _Wvw,
 											rebvio::types::Vector6f& _Xvw, types::Float _g_gravit);
 
+	/**
+	 * \brief Update the inverse depth of the keylines in the current edge map (used to build the distance field) using an EKF
+	 * \param _vel Estimated rigid transform translation
+	 */
 	void updateInverseDepth(rebvio::types::Vector3f& _vel);
 
 	void updateInverseDepthARLU(rebvio::types::KeyLine& _keyline, rebvio::types::Vector3f& _vel);
 
 private:
-	EdgeTracker::Config config_;
-	rebvio::Camera::SharedPtr camera_;
-	rebvio::EdgeDetector detector_;
-	rebvio::DistanceField distance_field_;
-	unsigned int frame_count_;				//!< Number of frame minimizations performed
+	EdgeTracker::Config config_;             //!< Configuration parameters
+	rebvio::Camera::SharedPtr camera_;       //!< Camera device
+	rebvio::EdgeDetector detector_;          //!< Edge detector
+	rebvio::DistanceField distance_field_;   //!< Distance field for pose estimation
+	unsigned int frame_count_;               //!< Number of frame minimizations performed
 
 
 };
