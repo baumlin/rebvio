@@ -117,7 +117,7 @@ private:
 	}
 
 private:
-	rebvio::EdgeMapConfig::SharedPtr config_;              //!< Configuration parameters
+	rebvio::EdgeMapConfig::SharedPtr config_;                     //!< Configuration parameters
 	rebvio::Camera::SharedPtr camera_;														//!< Camera Device
 	uint64_t ts_us_;																							//!< Timestamp in [us]
 	std::vector<rebvio::types::KeyLine> keylines_;								//!< Vector of keylines in the edge map

@@ -153,7 +153,7 @@ struct ImuState {
 	struct ImuStateConfig {
 		types::Float g_norm{9.81};                   //!< Measured gravity norm
 		types::Float g_uncertainty{2e-3};            //!< Process uncertainty on the g vector
-		types::Float g_norm_uncertainty{0.2e3};    //!< Uncertainty in the g norm: keep at big value
+		types::Float g_norm_uncertainty{0.2e3};      //!< Uncertainty in the g norm: keep at big value
 		types::Float acc_std_dev{2.0e-3};            //!< Accelerometer noise std dev
 		types::Float gyro_std_dev{1.6968e-04};       //!< Gyro noise std dev
 		types::Float gyro_bias_std_dev{1.9393e-05};  //!< Gyro bias random walk noise

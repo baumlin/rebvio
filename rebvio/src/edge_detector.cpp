@@ -116,12 +116,13 @@ rebvio::EdgeMap::SharedPtr EdgeDetector::buildEdgeMap(rebvio::types::Image& _ima
 				for(++idx; idx < idx_boundary; ++idx) {
 					keylines_mask_.at<int>(idx) = -1;
 				}
+				REBVIO_TIMER_TOCK();
 				return map;
 			}
 		}
 	}
-	return map;
 	REBVIO_TIMER_TOCK();
+	return map;
 }
 
 void EdgeDetector::joinEdges(rebvio::EdgeMap::SharedPtr& _map) {
