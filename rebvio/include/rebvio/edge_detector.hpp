@@ -31,6 +31,11 @@ struct EdgeDetectorConfig {
 };
 using EdgeDetectorConfigSharedPtr = std::shared_ptr<rebvio::EdgeDetectorConfig>;
 
+/**
+ * \class EdgeDetector
+ *
+ * Edge Detection from an input grayscale image according to "Realtime edge-based visual odometry for a monocular camera" (Tarrio & Pedre, 2015), Section 2.1
+ */
 class EdgeDetector {
 public:
 	EdgeDetector(rebvio::Camera::SharedPtr _camera, rebvio::EdgeDetectorConfigSharedPtr _config = std::make_shared<rebvio::EdgeDetectorConfig>());
