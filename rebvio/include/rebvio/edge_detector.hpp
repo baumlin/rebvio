@@ -28,8 +28,9 @@ struct EdgeDetectorConfig {
 	types::Float max_threshold{0.5};                 //!< Max limit for autothreshold
 	types::Float min_threshold{0.005};               //!< Min limit for autothreshold
   static constexpr int num_bins{100};              //!< Number of histogram bins for autothreshold calculation
+
+  using SharedPtr = std::shared_ptr<rebvio::EdgeDetectorConfig>;
 };
-using EdgeDetectorConfigSharedPtr = std::shared_ptr<rebvio::EdgeDetectorConfig>;
 
 /**
  * \class EdgeDetector
@@ -38,7 +39,7 @@ using EdgeDetectorConfigSharedPtr = std::shared_ptr<rebvio::EdgeDetectorConfig>;
  */
 class EdgeDetector {
 public:
-	EdgeDetector(rebvio::Camera::SharedPtr _camera, rebvio::EdgeDetectorConfigSharedPtr _config = std::make_shared<rebvio::EdgeDetectorConfig>());
+	EdgeDetector(rebvio::Camera::SharedPtr _camera, rebvio::EdgeDetectorConfig::SharedPtr _config = std::make_shared<rebvio::EdgeDetectorConfig>());
 	EdgeDetector() = delete;
 	~EdgeDetector();
 
@@ -81,15 +82,15 @@ private:
 	void tuneThreshold(rebvio::types::EdgeMap::SharedPtr _map);
 
 private:
-	EdgeDetectorConfigSharedPtr config_;  //!< Configuration parameters
-	int keylines_count_;                  //!< Current number of detected keylines in current image
-	cv::Mat keylines_mask_;               //!< Image mask containing the keyline IDs (-1 if no keyline)
+	EdgeDetectorConfig::SharedPtr config_;  //!< Configuration parameters
+	int keylines_count_;                    //!< Current number of detected keylines in current image
+	cv::Mat keylines_mask_;                 //!< Image mask containing the keyline IDs (-1 if no keyline)
 
-	rebvio::Camera::SharedPtr camera_;    //!< Camera Device
-	rebvio::ScaleSpace scale_space_;      //!< Scale space for edge detection
+	rebvio::Camera::SharedPtr camera_;      //!< Camera Device
+	rebvio::ScaleSpace scale_space_;        //!< Scale space for edge detection
 
-	types::Float auto_threshold_;         //!< Auto threshold
-	int max_image_value_;                 //!< Max input image value for auto threshold calculation
+	types::Float auto_threshold_;           //!< Auto threshold
+	int max_image_value_;                   //!< Max input image value for auto threshold calculation
 };
 
 } /* namespace rebvio */

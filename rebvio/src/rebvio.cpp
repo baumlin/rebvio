@@ -241,9 +241,7 @@ void Rebvio::stateEstimationProcess() {
 		} else {
 
 			// match from the new edge map to the old one searching on the stereo line
-			klm_num = new_edge_map->directedMatch(old_edge_map,V,P_V,Rgva,num_kf_back_m,
-					edge_tracker_.config().match_threshold_norm,edge_tracker_.config().match_threshold_angle,edge_tracker_.config().search_range,
-					edge_tracker_.config().pixel_uncertainty_match);
+			klm_num = new_edge_map->directedMatch(old_edge_map,V,P_V,Rgva,num_kf_back_m,edge_tracker_.config().search_range);
 
 			if(klm_num < edge_tracker_.config().global_min_matches_threshold) {
 				P_V = TooN::Identity*std::numeric_limits<types::Float>::max();
@@ -255,7 +253,7 @@ void Rebvio::stateEstimationProcess() {
 			} else {
 
 				// regularize edge map depth
-				new_edge_map->regularize1Iter(edge_tracker_.config().regularization_threshold);
+				new_edge_map->regularize1Iter();
 
 				// improve depth using kalman filter
 				edge_tracker_.updateInverseDepth(V);

@@ -11,7 +11,8 @@
 namespace rebvio {
 namespace types {
 
-EdgeMap::EdgeMap(std::shared_ptr<rebvio::Camera> _camera, int _size, uint64_t _ts_us) :
+EdgeMap::EdgeMap(std::shared_ptr<rebvio::Camera> _camera, int _size, uint64_t _ts_us, rebvio::types::EdgeMapConfig::SharedPtr _config) :
+		config_(_config),
 		camera_(_camera),
 		ts_us_(_ts_us),
 		threshold_(-1.0),
@@ -103,9 +104,9 @@ int EdgeMap::forwardMatch(std::shared_ptr<rebvio::types::EdgeMap> _map) {
 }
 
 int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel,
-								const rebvio::types::Matrix3f& _Rback, types::Float _min_thr_norm, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty) {
+								const rebvio::types::Matrix3f& _Rback, types::Float _max_radius) {
 
-	const types::Float cang_min_edge = std::cos(_min_thr_ang*M_PI/180.0);
+	const types::Float cang_min_edge = std::cos(config_->match_threshold_angle*M_PI/180.0);
 
 	types::Vector3f p_m3 = _Rback*TooN::makeVector(_keyline.pos_img[0],_keyline.pos_img[1],camera_->fm_);
 	types::Float pmx = p_m3[0]*camera_->fm_/p_m3[2];
@@ -131,8 +132,8 @@ int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::t
 		t_x /= norm_t;
 		t_y /= norm_t;
 		dq_rho = norm_t*k_rho;
-		dq_min = std::max(types::Float(0.0),norm_t*(k_rho-_keyline.sigma_rho))-_loc_uncertainty;
-		dq_max = std::min(_max_radius,norm_t*(k_rho+_keyline.sigma_rho))+_loc_uncertainty;
+		dq_min = std::max(types::Float(0.0),norm_t*(k_rho-_keyline.sigma_rho))-config_->pixel_uncertainty_match;
+		dq_max = std::min(_max_radius,norm_t*(k_rho+_keyline.sigma_rho))+config_->pixel_uncertainty_match;
 		if(dq_rho > dq_max) {
 			dq_rho = 0.5*(dq_max+dq_min);
 			t_steps = static_cast<int>(dq_rho+0.5);
@@ -146,8 +147,8 @@ int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::t
 		t_x /= norm_t;
 		t_y /= norm_t;
 		norm_t = 1.0;
-		dq_min = -_max_radius-_loc_uncertainty;
-		dq_max = _max_radius+_loc_uncertainty;
+		dq_min = -_max_radius-config_->pixel_uncertainty_match;
+		dq_max = _max_radius+config_->pixel_uncertainty_match;
 		dq_rho = 0.0;
 		t_steps = dq_max;
 	}
@@ -173,9 +174,9 @@ int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::t
 				const types::KeyLine& keyline = keylines_[search->second];
 
 				types::Float cang = (keyline.gradient[0]*_keyline.gradient[0]+keyline.gradient[1]*_keyline.gradient[1])/(keyline.gradient_norm*_keyline.gradient_norm);
-				if(cang < cang_min_edge || std::fabs(keyline.gradient_norm/_keyline.gradient_norm-1.0) > _min_thr_norm) continue;
+				if(cang < cang_min_edge || std::fabs(keyline.gradient_norm/_keyline.gradient_norm-1.0) > config_->match_threshold_norm) continue;
 
-				types::Float v_rho_dr = (_loc_uncertainty*_loc_uncertainty+keyline.sigma_rho*keyline.sigma_rho*norm_t*norm_t+sigma2_t*keyline.rho*keyline.rho);
+				types::Float v_rho_dr = (config_->pixel_uncertainty_match*config_->pixel_uncertainty_match+keyline.sigma_rho*keyline.sigma_rho*norm_t*norm_t+sigma2_t*keyline.rho*keyline.rho);
 				if((t-norm_t*keyline.rho)*(t-norm_t*keyline.rho) > v_rho_dr) continue;
 
 				return search->second;
@@ -187,8 +188,8 @@ int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::t
 	return -1;
 }
 
-int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel, const rebvio::types::Matrix3f& _Rback,
-													 int& _kf_matches, types::Float _min_thr_norm, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty) {
+int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel,
+		                       const rebvio::types::Matrix3f& _Rback, int& _kf_matches, types::Float _max_radius) {
 
 	REBVIO_TIMER_TICK();
 	matches_ = 0;
@@ -200,7 +201,7 @@ int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const r
 	for(int idx = 0; idx < size(); ++idx) {
 
 		types::KeyLine& keyline = keylines_[idx];
-		int idx_match = _map->searchMatch(keyline,vel,Rvel,_Rback,_min_thr_norm,_min_thr_ang,_max_radius,_loc_uncertainty);
+		int idx_match = _map->searchMatch(keyline,vel,Rvel,_Rback,_max_radius);
 		if(idx_match < 0) continue;
 
 		const types::KeyLine& matched_keyline = (*_map)[idx_match];
@@ -221,7 +222,7 @@ int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const r
 	return matches_;
 }
 
-int EdgeMap::regularize1Iter(types::Float _threshold) {
+int EdgeMap::regularize1Iter() {
 	REBVIO_TIMER_TICK();
 	int r_num = 0;
 	types::Float r[size()];
@@ -241,9 +242,9 @@ int EdgeMap::regularize1Iter(types::Float _threshold) {
 
 		// Second morphological test using gradients
 		types::Float alpha = (keyline_next.gradient[0]*keyline_prev.gradient[0]+keyline_next.gradient[1]*keyline_prev.gradient[1])/(keyline_next.gradient_norm*keyline_prev.gradient_norm);
-		if(alpha < _threshold) continue;
+		if(alpha < config_->regularization_threshold) continue;
 
-		alpha = (alpha-_threshold)/(1.0-_threshold);
+		alpha = (alpha-config_->regularization_threshold)/(1.0-config_->regularization_threshold);
 		alpha /= std::fabs(keyline_next.rho-keyline_prev.rho)/(keyline_next.sigma_rho+keyline_prev.sigma_rho)+1.0;
 		types::Float wr = 1.0/(keyline.sigma_rho*keyline.sigma_rho);
 		types::Float wrn = alpha/(keyline_next.sigma_rho*keyline_next.sigma_rho);

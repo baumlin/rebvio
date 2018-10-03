@@ -17,6 +17,14 @@
 namespace rebvio {
 namespace types {
 
+struct EdgeMapConfig {
+	types::Float pixel_uncertainty_match{2.0};       //!< Pixel uncertainty for the matching step
+	types::Float match_threshold_norm{1.0};          //!< Relative norm threshold between two keyline gradients for keyline matching
+	types::Float match_threshold_angle{45.0};        //!< Angle threshold [deg] between two keyline gradients for keyline matching
+	types::Float regularization_threshold{0.5};      //!< Edgemap regularization threshold on angle beta between neighboring keyline gradients (threshold = cos(beta))
+
+	using SharedPtr = std::shared_ptr<rebvio::types::EdgeMapConfig>;
+};
 
 class EdgeMap {
 
@@ -24,7 +32,7 @@ public:
 	using SharedPtr = std::shared_ptr<rebvio::types::EdgeMap>;
 
 public:
-	EdgeMap(rebvio::Camera::SharedPtr _camera, int _size, uint64_t _ts_us);
+	EdgeMap(rebvio::Camera::SharedPtr _camera, int _size, uint64_t _ts_us, rebvio::types::EdgeMapConfig::SharedPtr _config = std::make_shared<rebvio::types::EdgeMapConfig>());
 	EdgeMap() = delete;
 
 	/**
@@ -86,20 +94,20 @@ public:
 	 * \brief Search for a match of _keyline (from another map) in this map
 	 */
 	int searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel,
-									const rebvio::types::Matrix3f& _Rback, types::Float _min_thr_norm, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty);
+									const rebvio::types::Matrix3f& _Rback, types::Float _max_radius);
 
 	/**
 	 * \brief Search keyline matches of this map with keylines in _map, given additional information regarding the extrinsics between the maps
 	 */
-	int directedMatch(rebvio::types::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel, const rebvio::types::Matrix3f& _Rback,
-										int& _kf_matches, types::Float _min_thr_norm, types::Float _min_thr_ang, types::Float _max_radius, types::Float _loc_uncertainty);
+	int directedMatch(rebvio::types::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel,
+			              const rebvio::types::Matrix3f& _Rback, int& _kf_matches, types::Float _max_radius);
 
 	/**
 	 * \brief Regularize the inverse depth quantities (rho, sigma_rho) of this edge map using a weighted mean of the depths of the two neighbours of a keyline
 	 * \param _threshold Angular threshold: _threshold = cos(beta), where beta is the angle between the gradients of the two neightbours of a keyline
 	 * \return Number or regularized keylines
 	 */
-	int regularize1Iter(types::Float _threshold);
+	int regularize1Iter();
 
 private:
 	inline int getIndex(types::Float _row, types::Float _col) {
@@ -110,6 +118,7 @@ private:
 	}
 
 private:
+	rebvio::types::EdgeMapConfig::SharedPtr config_;              //!< Configuration parameters
 	rebvio::Camera::SharedPtr camera_;														//!< Camera Device
 	uint64_t ts_us_;																							//!< Timestamp in [us]
 	std::vector<rebvio::types::KeyLine> keylines_;								//!< Vector of keylines in the edge map

@@ -14,7 +14,7 @@
 
 namespace rebvio {
 
-EdgeDetector::EdgeDetector(rebvio::Camera::SharedPtr _camera, rebvio::EdgeDetectorConfigSharedPtr _config) :
+EdgeDetector::EdgeDetector(rebvio::Camera::SharedPtr _camera, rebvio::EdgeDetectorConfig::SharedPtr _config) :
 	keylines_count_(0),
 	config_(_config),
 	auto_threshold_(config_->threshold),

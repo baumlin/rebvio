@@ -117,16 +117,12 @@ public:
 		types::Float search_range{40.0};                 //!< Pixel search range for tracking and mapping
 		types::Float reweight_distance{2.0};             //!< Reweigh error residual in Huber Loss Function
 		types::Float match_treshold{0.5};                //!< Threshold on the keyline gradient dot product
-		types::Float match_threshold_norm{1.0};          //!< Relative norm threshold between two keyline gradients for keyline matching
-		types::Float match_threshold_angle{45.0};        //!< Angle threshold [deg] between two keyline gradients for keyline matching
 		unsigned int min_match_threshold{0};             //!< Minimum number of consecutive matches for a keyline
 		unsigned int iterations{5};                      //!< Number of iterations for tracker
 		unsigned int global_min_matches_threshold{500};  //!< Minimum number of keyline matches for tracking and mapping
-		types::Float pixel_uncertainty_match{2.0};       //!< Pixel uncertainty for the matching step
 		types::Float pixel_uncertainty{1};               //!< Pixel uncertainty for the correction step
 		types::Float quantile_cutoff{0.9};               //!< Percentile of the keylines to use
 		int quantile_num_bins{100};                      //!< Number of bins in the histogram for percentile calculation
-		types::Float regularization_threshold{0.5};      //!< Edgemap regularization threshold on angle beta between neighboring keyline gradients (threshold = cos(beta))
 		types::Float reshape_q_abs{1e-4};                //!< EKF modeled absolute error on inverse depth
 	};
 
