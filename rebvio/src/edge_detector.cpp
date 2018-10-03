@@ -5,9 +5,9 @@
  *      Author: baumlin
  */
 
+#include <rebvio/edge_map.hpp>
 #include <rebvio/types/definitions.hpp>
 #include "rebvio/edge_detector.hpp"
-#include "rebvio/types/edge_map.hpp"
 #include "rebvio/util/timer.hpp"
 #include <iostream>
 #include <memory>
@@ -27,14 +27,14 @@ EdgeDetector::EdgeDetector(rebvio::Camera::SharedPtr _camera, rebvio::EdgeDetect
 
 EdgeDetector::~EdgeDetector() {}
 
-rebvio::types::EdgeMap::SharedPtr EdgeDetector::detect(rebvio::types::Image& _image) {
+rebvio::EdgeMap::SharedPtr EdgeDetector::detect(rebvio::types::Image& _image) {
 	REBVIO_TIMER_TICK();
 
 	if(config_->gain > 0) {
 		config_->threshold -= config_->gain*types::Float(config_->keylines_ref-keylines_count_);
 		config_->threshold = (config_->threshold > config_->max_threshold) ? config_->max_threshold : ((config_->threshold < config_->min_threshold) ? config_->min_threshold : config_->threshold);
 	}
-	rebvio::types::EdgeMap::SharedPtr map = buildEdgeMap(_image);
+	rebvio::EdgeMap::SharedPtr map = buildEdgeMap(_image);
 	joinEdges(map);
 	tuneThreshold(map);
 
@@ -42,13 +42,13 @@ rebvio::types::EdgeMap::SharedPtr EdgeDetector::detect(rebvio::types::Image& _im
 	return map;
 }
 
-rebvio::types::EdgeMap::SharedPtr EdgeDetector::buildEdgeMap(rebvio::types::Image& _image) {
+rebvio::EdgeMap::SharedPtr EdgeDetector::buildEdgeMap(rebvio::types::Image& _image) {
 	REBVIO_TIMER_TICK();
 
 	// Build the scale space for edge detection
 	scale_space_.build(_image.data);
 
-	rebvio::types::EdgeMap::SharedPtr map = std::make_shared<rebvio::types::EdgeMap>(camera_,config_->keylines_max,_image.ts_us);
+	rebvio::EdgeMap::SharedPtr map = std::make_shared<rebvio::EdgeMap>(camera_,config_->keylines_max,_image.ts_us);
 
 	// Reset quantities (keylines_mask_ is reset on the go in the loop below)
 	keylines_count_ = 0;
@@ -124,7 +124,7 @@ rebvio::types::EdgeMap::SharedPtr EdgeDetector::buildEdgeMap(rebvio::types::Imag
 	REBVIO_TIMER_TOCK();
 }
 
-void EdgeDetector::joinEdges(rebvio::types::EdgeMap::SharedPtr& _map) {
+void EdgeDetector::joinEdges(rebvio::EdgeMap::SharedPtr& _map) {
 	REBVIO_TIMER_TICK();
 	for(int idx = 0; idx < _map->size(); ++idx) {
 		types::KeyLine& keyline = (*_map)[idx];
@@ -139,7 +139,7 @@ void EdgeDetector::joinEdges(rebvio::types::EdgeMap::SharedPtr& _map) {
 	REBVIO_TIMER_TOCK();
 }
 
-int EdgeDetector::nextKeylineIdx(rebvio::types::EdgeMap::SharedPtr& _map, int _x, int _y, int _idx) {
+int EdgeDetector::nextKeylineIdx(rebvio::EdgeMap::SharedPtr& _map, int _x, int _y, int _idx) {
 //	REBVIO_TIMER_TICK();
 	types::Float tx = -(*_map)[_idx].gradient[1];
 	types::Float ty = (*_map)[_idx].gradient[0];
@@ -170,7 +170,7 @@ int EdgeDetector::nextKeylineIdx(rebvio::types::EdgeMap::SharedPtr& _map, int _x
 
 }
 
-void EdgeDetector::tuneThreshold(rebvio::types::EdgeMap::SharedPtr _map) {
+void EdgeDetector::tuneThreshold(rebvio::EdgeMap::SharedPtr _map) {
 //	REBVIO_TIMER_TICK();
 	types::Float max_dog = (*_map)[0].gradient_norm;
 	types::Float min_dog = max_dog;

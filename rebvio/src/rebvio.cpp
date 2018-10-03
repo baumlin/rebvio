@@ -67,7 +67,7 @@ void Rebvio::dataAcquisitionProcess() {
 				img = image_buffer_.front();
 				image_buffer_.pop();
 			}
-			rebvio::types::EdgeMap::SharedPtr edge_map = edge_detector_.detect(img);
+			rebvio::EdgeMap::SharedPtr edge_map = edge_detector_.detect(img);
 			edgeImageCallback(img.data,edge_map);
 			{
 				std::lock_guard<std::mutex> guard(edge_map_buffer_mutex_);
@@ -117,7 +117,7 @@ void Rebvio::stateEstimationProcess() {
 		REBVIO_TIMER_TICK();
 
 		// access newest and old edge map
-		rebvio::types::EdgeMap::SharedPtr new_edge_map, old_edge_map;
+		rebvio::EdgeMap::SharedPtr new_edge_map, old_edge_map;
 		{
 			std::lock_guard<std::mutex> guard(edge_map_buffer_mutex_);
 			if(edge_map_buffer_.size() >= 2) {
@@ -287,12 +287,12 @@ void Rebvio::stateEstimationProcess() {
 	}
 }
 
-void Rebvio::edgeImageCallback(cv::Mat& _edge_image, rebvio::types::EdgeMap::SharedPtr& _map) {
+void Rebvio::edgeImageCallback(cv::Mat& _edge_image, rebvio::EdgeMap::SharedPtr& _map) {
 	for(auto& cb : edge_image_callbacks_)
 		cb(_edge_image,_map);
 }
 
-void Rebvio::registerEdgeImageCallback(std::function<void(cv::Mat&,rebvio::types::EdgeMap::SharedPtr&)> _cb) {
+void Rebvio::registerEdgeImageCallback(std::function<void(cv::Mat&,rebvio::EdgeMap::SharedPtr&)> _cb) {
 	edge_image_callbacks_.push_back(_cb);
 }
 

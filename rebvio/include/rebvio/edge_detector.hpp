@@ -11,9 +11,8 @@
 #include "rebvio/scale_space.hpp"
 #include "rebvio/types/keyline.hpp"
 #include "rebvio/types/image.hpp"
-#include "rebvio/types/edge_map.hpp"
-
 #include <opencv2/core.hpp>
+#include <rebvio/edge_map.hpp>
 
 namespace rebvio {
 
@@ -48,7 +47,7 @@ public:
 	 * \param _image Image for edge detection
 	 * \return Shared pointer to the detected edge map
 	 */
-	rebvio::types::EdgeMap::SharedPtr detect(rebvio::types::Image& _image);
+	rebvio::EdgeMap::SharedPtr detect(rebvio::types::Image& _image);
 
 private:
 
@@ -57,13 +56,13 @@ private:
 	 * \param _image Image for edge detection
 	 * \return Shared pointer to the detected edge map
 	 */
-	rebvio::types::EdgeMap::SharedPtr buildEdgeMap(rebvio::types::Image& _image);
+	rebvio::EdgeMap::SharedPtr buildEdgeMap(rebvio::types::Image& _image);
 
 	/**
 	 * \brief Joins the edges (sets next and previous ID of the keylines) in the edge map
 	 * \param _map Edge map
 	 */
-	void joinEdges(rebvio::types::EdgeMap::SharedPtr& _map);
+	void joinEdges(rebvio::EdgeMap::SharedPtr& _map);
 
 	/**
 	 * \brief Returns the index of the next keyline along the direction of the current keyline (perpendicular to its gradient)
@@ -73,13 +72,13 @@ private:
 	 * \param _idx Index of the current keyline
 	 * \return Index of the next keyline
 	 */
-	int nextKeylineIdx(rebvio::types::EdgeMap::SharedPtr& _map, int _x, int _y, int _idx);
+	int nextKeylineIdx(rebvio::EdgeMap::SharedPtr& _map, int _x, int _y, int _idx);
 
 	/**
 	 * \brief Auto-threshold calculation based on the histogram of DoG values
 	 * \param _map Edge map
 	 */
-	void tuneThreshold(rebvio::types::EdgeMap::SharedPtr _map);
+	void tuneThreshold(rebvio::EdgeMap::SharedPtr _map);
 
 private:
 	EdgeDetectorConfig::SharedPtr config_;  //!< Configuration parameters

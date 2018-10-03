@@ -8,7 +8,7 @@
 #ifndef INCLUDE_REBVIO_EDGE_TRACKER_HPP_
 #define INCLUDE_REBVIO_EDGE_TRACKER_HPP_
 
-#include "rebvio/types/edge_map.hpp"
+#include <rebvio/edge_map.hpp>
 
 namespace rebvio {
 
@@ -34,7 +34,7 @@ public:
 	/**
 	 * Reset distance field, i.e. set all id's = -1 (and leave other quantities) and (re-)build
 	 */
-	void build(rebvio::types::EdgeMap::SharedPtr _map) {
+	void build(rebvio::EdgeMap::SharedPtr _map) {
 
 		map_ = _map;
 		int size = rows_*cols_;
@@ -60,7 +60,7 @@ public:
 
 	DistanceFieldElement& operator[] (int _index) { return field_[_index]; }
 
-	rebvio::types::EdgeMap::SharedPtr map() { return map_; }
+	rebvio::EdgeMap::SharedPtr map() { return map_; }
 
 private:
 	inline int getIndex(types::Float _row, types::Float _col) {
@@ -75,7 +75,7 @@ private:
 	unsigned int rows_;
 	unsigned int cols_;
 	types::Float search_range_;
-	rebvio::types::EdgeMap::SharedPtr map_;
+	rebvio::EdgeMap::SharedPtr map_;
 };
 
 class KaGMEKBias {
@@ -143,7 +143,7 @@ public:
 	 * \brief Build the distance field of the edge map
 	 * \param _map Edge map to build the distance field
 	 */
-	void buildDistanceField(rebvio::types::EdgeMap::SharedPtr _map);
+	void buildDistanceField(rebvio::EdgeMap::SharedPtr _map);
 
 	/**
 	 * \brief Method to test the gradients of two keylines for similarity
@@ -165,14 +165,14 @@ public:
 	 * \param _fi Pixel residual
 	 * \return Weighted residual (weighted by inverse depth uncertainty)
 	 */
-	types::Float calculatefJ(rebvio::types::EdgeMap::SharedPtr _map, int _f_inx, types::Float& _df_dx, types::Float& _df_dy, rebvio::types::KeyLine& _keyline,
+	types::Float calculatefJ(rebvio::EdgeMap::SharedPtr _map, int _f_inx, types::Float& _df_dx, types::Float& _df_dy, rebvio::types::KeyLine& _keyline,
 			const types::Float& _px, const types::Float& _py, int& _mnum, types::Float& _fi);
 
 	/**
 	 * \brief
 	 * \param Score
 	 */
-	types::Float tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
+	types::Float tryVel(rebvio::EdgeMap::SharedPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
 			 types::Float _sigma_rho_min, types::Float* _residuals);
 
 	/**
@@ -182,7 +182,7 @@ public:
 	 * \param _Rvel Estimated translation uncertainty
 	 * \return Minimization score
 	 */
-	types::Float minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel);
+	types::Float minimizeVel(rebvio::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel);
 
 	/**
 	 * \brief Method to estimate the full rigid transform (rotation and translation) between the input edge map and the edge map used to build the distance field, using a linear approximation
@@ -193,7 +193,7 @@ public:
 	 * \param _X Output incremental state
 	 * \return Success of estimation (true if successful)
 	 */
-	bool extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Matrix6f& _Rx, rebvio::types::Vector6f& _X);
+	bool extRotVel(rebvio::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Matrix6f& _Rx, rebvio::types::Vector6f& _X);
 
 	/**
 	 * \brief Method to correct the estimated rigid transform using the gyro prior

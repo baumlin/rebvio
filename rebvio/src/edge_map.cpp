@@ -5,13 +5,12 @@
  *      Author: baumlin
  */
 
-#include "rebvio/types/edge_map.hpp"
+#include <rebvio/edge_map.hpp>
 #include "rebvio/util/timer.hpp"
 
 namespace rebvio {
-namespace types {
 
-EdgeMap::EdgeMap(std::shared_ptr<rebvio::Camera> _camera, int _size, uint64_t _ts_us, rebvio::types::EdgeMapConfig::SharedPtr _config) :
+EdgeMap::EdgeMap(std::shared_ptr<rebvio::Camera> _camera, int _size, uint64_t _ts_us, rebvio::EdgeMapConfig::SharedPtr _config) :
 		config_(_config),
 		camera_(_camera),
 		ts_us_(_ts_us),
@@ -73,7 +72,7 @@ void EdgeMap::rotateKeylines(const rebvio::types::Matrix3f& _R){
 	REBVIO_TIMER_TOCK();
 }
 
-int EdgeMap::forwardMatch(std::shared_ptr<rebvio::types::EdgeMap> _map) {
+int EdgeMap::forwardMatch(std::shared_ptr<rebvio::EdgeMap> _map) {
 	REBVIO_TIMER_TICK();
 	unsigned int num_matches = 0;
 //	char count[_map->size()] = {0};
@@ -188,7 +187,7 @@ int EdgeMap::searchMatch(const rebvio::types::KeyLine& _keyline, const rebvio::t
 	return -1;
 }
 
-int EdgeMap::directedMatch(std::shared_ptr<rebvio::types::EdgeMap> _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel,
+int EdgeMap::directedMatch(std::shared_ptr<rebvio::EdgeMap> _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel,
 		                       const rebvio::types::Matrix3f& _Rback, int& _kf_matches, types::Float _max_radius) {
 
 	REBVIO_TIMER_TICK();
@@ -265,5 +264,4 @@ int EdgeMap::regularize1Iter() {
 	return r_num;
 }
 
-} /* namespace types */
 } /* namespace rebvio */

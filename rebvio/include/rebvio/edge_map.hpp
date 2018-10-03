@@ -5,8 +5,8 @@
  *      Author: baumlin
  */
 
-#ifndef INCLUDE_REBVIO_TYPES_EDGE_MAP_HPP_
-#define INCLUDE_REBVIO_TYPES_EDGE_MAP_HPP_
+#ifndef INCLUDE_REBVIO_EDGE_MAP_HPP_
+#define INCLUDE_REBVIO_EDGE_MAP_HPP_
 
 #include <memory>
 #include <vector>
@@ -15,7 +15,6 @@
 #include "rebvio/types/imu.hpp"
 
 namespace rebvio {
-namespace types {
 
 struct EdgeMapConfig {
 	types::Float pixel_uncertainty_match{2.0};       //!< Pixel uncertainty for the matching step
@@ -23,16 +22,16 @@ struct EdgeMapConfig {
 	types::Float match_threshold_angle{45.0};        //!< Angle threshold [deg] between two keyline gradients for keyline matching
 	types::Float regularization_threshold{0.5};      //!< Edgemap regularization threshold on angle beta between neighboring keyline gradients (threshold = cos(beta))
 
-	using SharedPtr = std::shared_ptr<rebvio::types::EdgeMapConfig>;
+	using SharedPtr = std::shared_ptr<rebvio::EdgeMapConfig>;
 };
 
 class EdgeMap {
 
 public:
-	using SharedPtr = std::shared_ptr<rebvio::types::EdgeMap>;
+	using SharedPtr = std::shared_ptr<rebvio::EdgeMap>;
 
 public:
-	EdgeMap(rebvio::Camera::SharedPtr _camera, int _size, uint64_t _ts_us, rebvio::types::EdgeMapConfig::SharedPtr _config = std::make_shared<rebvio::types::EdgeMapConfig>());
+	EdgeMap(rebvio::Camera::SharedPtr _camera, int _size, uint64_t _ts_us, rebvio::EdgeMapConfig::SharedPtr _config = std::make_shared<rebvio::EdgeMapConfig>());
 	EdgeMap() = delete;
 
 	/**
@@ -88,7 +87,7 @@ public:
 	/**
 	 * \brief Search keyline matches of this map with keylines in _map
 	 */
-	int forwardMatch(rebvio::types::EdgeMap::SharedPtr _map);
+	int forwardMatch(rebvio::EdgeMap::SharedPtr _map);
 
 	/**
 	 * \brief Search for a match of _keyline (from another map) in this map
@@ -99,7 +98,7 @@ public:
 	/**
 	 * \brief Search keyline matches of this map with keylines in _map, given additional information regarding the extrinsics between the maps
 	 */
-	int directedMatch(rebvio::types::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel,
+	int directedMatch(rebvio::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, const rebvio::types::Matrix3f& _Rvel,
 			              const rebvio::types::Matrix3f& _Rback, int& _kf_matches, types::Float _max_radius);
 
 	/**
@@ -118,7 +117,7 @@ private:
 	}
 
 private:
-	rebvio::types::EdgeMapConfig::SharedPtr config_;              //!< Configuration parameters
+	rebvio::EdgeMapConfig::SharedPtr config_;              //!< Configuration parameters
 	rebvio::Camera::SharedPtr camera_;														//!< Camera Device
 	uint64_t ts_us_;																							//!< Timestamp in [us]
 	std::vector<rebvio::types::KeyLine> keylines_;								//!< Vector of keylines in the edge map
@@ -128,7 +127,6 @@ private:
 	unsigned int matches_;																				//!< Number of matches with other edge map
 };
 
-} /* namespace types */
 } /* namespace rebvio */
 
-#endif /* INCLUDE_REBVIO_TYPES_EDGE_MAP_HPP_ */
+#endif /* INCLUDE_REBVIO_EDGE_MAP_HPP_ */

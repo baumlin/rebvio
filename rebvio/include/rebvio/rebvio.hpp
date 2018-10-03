@@ -48,13 +48,13 @@ public:
 	void imageCallback(rebvio::types::Image&&);
 	void imuCallback(rebvio::types::Imu&&);
 
-	void registerEdgeImageCallback(std::function<void(cv::Mat&,rebvio::types::EdgeMap::SharedPtr&)>);
+	void registerEdgeImageCallback(std::function<void(cv::Mat&,rebvio::EdgeMap::SharedPtr&)>);
 	void registerOdometryCallback(std::function<void(rebvio::Rebvio::Odometry&)>);
 
 
 private:
 	void dataAcquisitionProcess();
-	void edgeImageCallback(cv::Mat&,rebvio::types::EdgeMap::SharedPtr&);
+	void edgeImageCallback(cv::Mat&,rebvio::EdgeMap::SharedPtr&);
 	void odometryCallback(rebvio::Rebvio::Odometry&);
 
 	void stateEstimationProcess();
@@ -77,10 +77,10 @@ private:
 	std::mutex image_buffer_mutex_;
 	std::queue<rebvio::types::Imu> imu_buffer_;
 	std::mutex imu_buffer_mutex_;
-	std::queue<rebvio::types::EdgeMap::SharedPtr> edge_map_buffer_;
+	std::queue<rebvio::EdgeMap::SharedPtr> edge_map_buffer_;
 	std::mutex edge_map_buffer_mutex_;
 
-	std::vector<std::function<void(cv::Mat&,rebvio::types::EdgeMap::SharedPtr&)>> edge_image_callbacks_;
+	std::vector<std::function<void(cv::Mat&,rebvio::EdgeMap::SharedPtr&)>> edge_image_callbacks_;
 	std::vector<std::function<void(rebvio::Rebvio::Odometry&)>> odometry_callbacks_;
 };
 
