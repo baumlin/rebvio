@@ -67,7 +67,7 @@ void Rebvio::dataAcquisitionProcess() {
 				img = image_buffer_.front();
 				image_buffer_.pop();
 			}
-			rebvio::types::EdgeMap::SharedPtr edge_map = edge_detector_.detect(img,100);
+			rebvio::types::EdgeMap::SharedPtr edge_map = edge_detector_.detect(img);
 			edgeImageCallback(img.data,edge_map);
 			{
 				std::lock_guard<std::mutex> guard(edge_map_buffer_mutex_);

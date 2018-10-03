@@ -14,18 +14,10 @@
 
 namespace rebvio {
 
-EdgeDetector::EdgeDetector(rebvio::Camera::SharedPtr _camera) :
+EdgeDetector::EdgeDetector(rebvio::Camera::SharedPtr _camera, rebvio::EdgeDetectorConfigSharedPtr _config) :
 	keylines_count_(0),
-	points_ref_(12000),
-	points_max_(16000),
-	plane_fit_size_(2),
-	pos_neg_threshold_(0.4),
-	dog_threshold_(0.095259868922420),
-	threshold_(0.01),
-	tuned_threshold_(threshold_),
-	gain_(5e-7),
-	max_threshold_(0.5),
-	min_threshold_(0.005),
+	config_(_config),
+	auto_threshold_(config_->threshold),
 	max_image_value_(765), // (255*3)
 	camera_(_camera),
 	scale_space_(camera_)
@@ -35,42 +27,38 @@ EdgeDetector::EdgeDetector(rebvio::Camera::SharedPtr _camera) :
 
 EdgeDetector::~EdgeDetector() {}
 
-int EdgeDetector::getNumKeylines() const {
-	return keylines_count_;
-}
-
-cv::Mat& EdgeDetector::getMask() {
-	return keylines_mask_;
-}
-
-rebvio::types::EdgeMap::SharedPtr EdgeDetector::detect(rebvio::types::Image& _image,int _num_bins) {
+rebvio::types::EdgeMap::SharedPtr EdgeDetector::detect(rebvio::types::Image& _image) {
 	REBVIO_TIMER_TICK();
-	rebvio::types::EdgeMap::SharedPtr map = std::make_shared<rebvio::types::EdgeMap>(camera_,points_max_,_image.ts_us);
-	scale_space_.build(_image.data);
 
-	if(gain_ > 0) {
-		threshold_ -= gain_*types::Float(points_ref_-keylines_count_);
-		threshold_ = (threshold_ > max_threshold_) ? max_threshold_ : ((threshold_ < min_threshold_) ? min_threshold_ : threshold_);
+	if(config_->gain > 0) {
+		config_->threshold -= config_->gain*types::Float(config_->keylines_ref-keylines_count_);
+		config_->threshold = (config_->threshold > config_->max_threshold) ? config_->max_threshold : ((config_->threshold < config_->min_threshold) ? config_->min_threshold : config_->threshold);
 	}
-	buildMask(map);
+	rebvio::types::EdgeMap::SharedPtr map = buildEdgeMap(_image);
 	joinEdges(map);
-	tuneThreshold(map,_num_bins);
+	tuneThreshold(map);
 
 	REBVIO_TIMER_TOCK();
 	return map;
 }
 
-void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
+rebvio::types::EdgeMap::SharedPtr EdgeDetector::buildEdgeMap(rebvio::types::Image& _image) {
 	REBVIO_TIMER_TICK();
 
+	// Build the scale space for edge detection
+	scale_space_.build(_image.data);
+
+	rebvio::types::EdgeMap::SharedPtr map = std::make_shared<rebvio::types::EdgeMap>(camera_,config_->keylines_max,_image.ts_us);
+
+	// Reset quantities (keylines_mask_ is reset on the go in the loop below)
 	keylines_count_ = 0;
 
 	static bool calc_phi = true;
-	static TooN::Matrix<TooN::Dynamic,TooN::Dynamic,types::Float> Pinv(3,(plane_fit_size_*2+1)*(plane_fit_size_*2+1));
+	static TooN::Matrix<TooN::Dynamic,TooN::Dynamic,types::Float> Pinv(3,(config_->plane_fit_size*2+1)*(config_->plane_fit_size*2+1));
 	if(calc_phi) {
-		TooN::Matrix<TooN::Dynamic,TooN::Dynamic,types::Float> Phi((plane_fit_size_*2+1)*(plane_fit_size_*2+1),3);
-		for(int row = -plane_fit_size_,k=0; row <= plane_fit_size_; ++row) {
-			for(int col = -plane_fit_size_; col <= plane_fit_size_; ++col,++k) {
+		TooN::Matrix<TooN::Dynamic,TooN::Dynamic,types::Float> Phi((config_->plane_fit_size*2+1)*(config_->plane_fit_size*2+1),3);
+		for(int row = -config_->plane_fit_size,k=0; row <= config_->plane_fit_size; ++row) {
+			for(int col = -config_->plane_fit_size; col <= config_->plane_fit_size; ++col,++k) {
 				Phi(k,0) = col;
 				Phi(k,1) = row;
 				Phi(k,2) = 1;
@@ -79,55 +67,32 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 		Pinv = types::invert(Phi.T()*Phi)*Phi.T();
 		calc_phi = false;
 	}
-	types::Float pn_threshold = types::Float((2.0*plane_fit_size_+1.0)*(2.0*plane_fit_size_+1.0))*pos_neg_threshold_;
-	types::Float gradient_threshold_squared = (threshold_*max_image_value_*dog_threshold_)*(threshold_*max_image_value_*dog_threshold_);
-	types::Float mag_threshold = (threshold_*max_image_value_)*(threshold_*max_image_value_);
+	types::Float pn_threshold = types::Float((2.0*config_->plane_fit_size+1.0)*(2.0*config_->plane_fit_size+1.0))*config_->pos_neg_threshold;
+	types::Float gradient_threshold_squared = (config_->threshold*max_image_value_*config_->dog_threshold)*(config_->threshold*max_image_value_*config_->dog_threshold);
+	types::Float mag_threshold = (config_->threshold*max_image_value_)*(config_->threshold*max_image_value_);
 
-	for(int row = plane_fit_size_; row < camera_->rows_-plane_fit_size_; ++row) {
+	for(int row = config_->plane_fit_size; row < camera_->rows_-config_->plane_fit_size; ++row) {
 		int* km_ptr = keylines_mask_.ptr<int>(row);
 		const types::Float* mag_ptr = scale_space_.mag().ptr<types::Float>(row);
 		const types::Float* dog0_ptr = scale_space_.dog().ptr<types::Float>(row-1);
 		const types::Float* dog1_ptr = scale_space_.dog().ptr<types::Float>(row);
 		const types::Float* dog2_ptr = scale_space_.dog().ptr<types::Float>(row+1);
-		for(int col = plane_fit_size_; col < camera_->cols_-plane_fit_size_; ++col) {
+		for(int col = config_->plane_fit_size; col < camera_->cols_-config_->plane_fit_size; ++col) {
 			int idx = col+row*camera_->cols_;
-			km_ptr[col] = -1;
+			km_ptr[col] = -1; // reset previous mask entry
 
 			if(mag_ptr[col] < mag_threshold) continue;
 
 			int pn = 0;
-			TooN::Matrix<TooN::Dynamic,TooN::Dynamic,types::Float> Y((plane_fit_size_*2+1)*(plane_fit_size_*2+1),1);
-			for(int r = -plane_fit_size_, k = 0; r <= plane_fit_size_; ++r) {
+			TooN::Matrix<TooN::Dynamic,TooN::Dynamic,types::Float> Y((config_->plane_fit_size*2+1)*(config_->plane_fit_size*2+1),1);
+			for(int r = -config_->plane_fit_size, k = 0; r <= config_->plane_fit_size; ++r) {
 				const types::Float* dog_ptr = scale_space_.dog().ptr<types::Float>(row+r);
-				for(int c = -plane_fit_size_; c <= plane_fit_size_; ++c,++k) {
+				for(int c = -config_->plane_fit_size; c <= config_->plane_fit_size; ++c,++k) {
 					types::Float dog = dog_ptr[col+c];
 					Y(k,0) = dog;
 					pn = (dog > 0.0) ? pn+1 : pn-1;
 				}
 			}
-//			REBVIO_NAMED_TIMER_TOCK(loop);  DONT USE THIS!
-//			pn = 0;
-//			REBVIO_NAMED_TIMER_TICK(pointer);
-//			Y(0,0) = dog0_ptr[col-1];
-//			pn = (Y(0,0) > 0.0) ? pn+1 : pn-1;
-//			Y(1,0) = dog0_ptr[col];
-//			pn = (Y(1,0) > 0.0) ? pn+1 : pn-1;
-//			Y(2,0) = dog0_ptr[col+1];
-//			pn = (Y(2,0) > 0.0) ? pn+1 : pn-1;
-//			Y(3,0) = dog1_ptr[col-1];
-//			pn = (Y(3,0) > 0.0) ? pn+1 : pn-1;
-//			Y(4,0) = dog1_ptr[col];
-//			pn = (Y(4,0) > 0.0) ? pn+1 : pn-1;
-//			Y(5,0) = dog1_ptr[col+1];
-//			pn = (Y(5,0) > 0.0) ? pn+1 : pn-1;
-//			Y(6,0) = dog2_ptr[col-1];
-//			pn = (Y(6,0) > 0.0) ? pn+1 : pn-1;
-//			Y(7,0) = dog2_ptr[col];
-//			pn = (Y(7,0) > 0.0) ? pn+1 : pn-1;
-//			Y(8,0) = dog2_ptr[col+1];
-//			pn = (Y(8,0) > 0.0) ? pn+1 : pn-1;
-//			REBVIO_NAMED_TIMER_TOCK(pointer);
-
 
 			if(fabs(pn) > pn_threshold) continue;
 
@@ -143,36 +108,38 @@ void EdgeDetector::buildMask(rebvio::types::EdgeMap::SharedPtr& _map) {
 			if(gradient[0]*gradient[0]+gradient[1]*gradient[1] < gradient_threshold_squared) continue;
 
 			types::Vector2f position = TooN::makeVector(types::Float(col)+xs,types::Float(row)+ys);
-			_map->keylines().emplace_back(types::KeyLine(position,gradient,TooN::makeVector(position[0]-camera_->cx_,position[1]-camera_->cy_)));
+			map->keylines().emplace_back(types::KeyLine(position,gradient,TooN::makeVector(position[0]-camera_->cx_,position[1]-camera_->cy_)));
 			km_ptr[col] = keylines_count_;
-			_map->mask().emplace(idx,keylines_count_);
-			if(++keylines_count_ >= points_max_) { // now keylines_count_ == _map->size()
+			map->mask().emplace(idx,keylines_count_);
+			if(++keylines_count_ >= config_->keylines_max) { // now keylines_count_ == _map->size()
 				int idx_boundary = camera_->rows_*camera_->cols_;
 				for(++idx; idx < idx_boundary; ++idx) {
 					keylines_mask_.at<int>(idx) = -1;
 				}
-				return;
+				return map;
 			}
 		}
 	}
+	return map;
 	REBVIO_TIMER_TOCK();
 }
 
 void EdgeDetector::joinEdges(rebvio::types::EdgeMap::SharedPtr& _map) {
 	REBVIO_TIMER_TICK();
 	for(int idx = 0; idx < _map->size(); ++idx) {
-		int x = int((*_map)[idx].pos[0]+0.5);
-		int y = int((*_map)[idx].pos[1]+0.5);
-		int id = nextPoint(_map,x,y,idx);
-		if(id < 0) continue;
+		types::KeyLine& keyline = (*_map)[idx];
+		int x = static_cast<int>(keyline.pos[0]+0.5);
+		int y = static_cast<int>(keyline.pos[1]+0.5);
+		int id_next = nextKeylineIdx(_map,x,y,idx);
+		if(id_next < 0) continue;
 
-		(*_map)[id].id_prev = idx;
-		(*_map)[idx].id_next = id;
+		(*_map)[id_next].id_prev = idx;
+		keyline.id_next = id_next;
 	}
 	REBVIO_TIMER_TOCK();
 }
 
-int EdgeDetector::nextPoint(rebvio::types::EdgeMap::SharedPtr& _map, int _x, int _y, int _idx) {
+int EdgeDetector::nextKeylineIdx(rebvio::types::EdgeMap::SharedPtr& _map, int _x, int _y, int _idx) {
 //	REBVIO_TIMER_TICK();
 	types::Float tx = -(*_map)[_idx].gradient[1];
 	types::Float ty = (*_map)[_idx].gradient[0];
@@ -203,7 +170,7 @@ int EdgeDetector::nextPoint(rebvio::types::EdgeMap::SharedPtr& _map, int _x, int
 
 }
 
-void EdgeDetector::tuneThreshold(rebvio::types::EdgeMap::SharedPtr _map, int _num_bins) {
+void EdgeDetector::tuneThreshold(rebvio::types::EdgeMap::SharedPtr _map) {
 //	REBVIO_TIMER_TICK();
 	types::Float max_dog = (*_map)[0].gradient_norm;
 	types::Float min_dog = max_dog;
@@ -212,17 +179,17 @@ void EdgeDetector::tuneThreshold(rebvio::types::EdgeMap::SharedPtr _map, int _nu
 		if(max_dog < keyline.gradient_norm) max_dog = keyline.gradient_norm;
 		if(min_dog > keyline.gradient_norm) min_dog = keyline.gradient_norm;
 	}
-	int histogram[_num_bins] = {0};
+	int histogram[config_->num_bins] = {0};
 	for(int idx = 0; idx < _map->size(); ++idx) {
-		int i = _num_bins*(max_dog-(*_map)[idx].gradient_norm)/(max_dog-min_dog);
-		i = (i > _num_bins-1) ? _num_bins-1 : i;
+		int i = config_->num_bins*(max_dog-_map->operator[](idx).gradient_norm)/(max_dog-min_dog);
+		i = (i > config_->num_bins-1) ? config_->num_bins-1 : i;
 		i = (i < 0) ? 0 : i;
 		++histogram[i];
 	}
 	int i = 0;
-	for(int a = 0; i < _num_bins && a < points_max_; i++, a+=histogram[i]);
-	tuned_threshold_ = max_dog - types::Float(i*(max_dog-min_dog))/types::Float(_num_bins);
-	_map->threshold(tuned_threshold_);
+	for(int a = 0; i < config_->num_bins && a < config_->keylines_max; i++, a+=histogram[i]);
+	auto_threshold_ = max_dog - types::Float(i*(max_dog-min_dog))/types::Float(config_->num_bins);
+	_map->threshold(auto_threshold_);
 //	REBVIO_TIMER_TOCK();
 }
 

@@ -17,40 +17,74 @@
 
 namespace rebvio {
 
+struct EdgeDetectorConfig {
+	int keylines_ref{12000};                         //!< Number of keylines when autothresholded
+	int keylines_max{16000};                         //!< Maximum number of keylines
+	static constexpr int plane_fit_size{2};          //!< Window radius for DoG plane fitting: (2*plane_fit_size+1)^2
+	types::Float pos_neg_threshold{0.4};             //!< Max percentual difference for DoG nonmaximum suppression
+	types::Float dog_threshold{0.095259868922420};   //!< Relation between DoG threshold and gradient threshold ~1/sigma0^4
+	types::Float threshold{0.01};                    //!< Manual treshold
+	types::Float gain{5e-7};                         //!< Autogain for threshold (if 0, autogain is disabled)
+	types::Float max_threshold{0.5};                 //!< Max limit for autothreshold
+	types::Float min_threshold{0.005};               //!< Min limit for autothreshold
+  static constexpr int num_bins{100};              //!< Number of histogram bins for autothreshold calculation
+};
+using EdgeDetectorConfigSharedPtr = std::shared_ptr<rebvio::EdgeDetectorConfig>;
+
 class EdgeDetector {
 public:
-	EdgeDetector(rebvio::Camera::SharedPtr);
+	EdgeDetector(rebvio::Camera::SharedPtr _camera, rebvio::EdgeDetectorConfigSharedPtr _config = std::make_shared<rebvio::EdgeDetectorConfig>());
+	EdgeDetector() = delete;
 	~EdgeDetector();
 
-	rebvio::types::EdgeMap::SharedPtr detect(rebvio::types::Image&,int);
-
-	int getNumKeylines() const;
-	cv::Mat& getMask();
-
-private:
-	void buildMask(rebvio::types::EdgeMap::SharedPtr&);
-	void joinEdges(rebvio::types::EdgeMap::SharedPtr&);
-	int nextPoint(rebvio::types::EdgeMap::SharedPtr&,int,int,int);
-	void tuneThreshold(rebvio::types::EdgeMap::SharedPtr,int);
+	/**
+	 * \brief Method to detect edges in the input image and return them as a shared pointer to an edge map
+	 * \param _image Image for edge detection
+	 * \return Shared pointer to the detected edge map
+	 */
+	rebvio::types::EdgeMap::SharedPtr detect(rebvio::types::Image& _image);
 
 private:
-	int keylines_count_;							//< Current number of detected keylines in current image
-	cv::Mat keylines_mask_;						//< Image mask containing the keyline IDs (-1 if no keyline)
-	int points_ref_;									//< Number of points when autothresholded
-	int points_max_;									//< Maximum number of points
 
-	rebvio::Camera::SharedPtr camera_;
-	rebvio::ScaleSpace scale_space_;
+	/**
+	 * \brief Detects keylines and creates the initial edge map
+	 * \param _image Image for edge detection
+	 * \return Shared pointer to the detected edge map
+	 */
+	rebvio::types::EdgeMap::SharedPtr buildEdgeMap(rebvio::types::Image& _image);
 
-	int plane_fit_size_;							//< Half window size -1 for DoG plane fitting: (2*plane_fit_size+1)^2
-	types::Float pos_neg_threshold_;					//< Max percentual difference for DoG nonmaximum suppression
-	types::Float dog_threshold_;							//< Relation between DoG threshold and gradient threshold ~1/sigma0^4
-	types::Float threshold_;									//< Manual treshold
-	types::Float tuned_threshold_;
-	types::Float gain_;											//< Autogain for threshold (if 0, autogain is disabled)
-	types::Float max_threshold_;							//< Max limit for autothreshold
-	types::Float min_threshold_;							//< Min limit for autothreshold
-	int max_image_value_;
+	/**
+	 * \brief Joins the edges (sets next and previous ID of the keylines) in the edge map
+	 * \param _map Edge map
+	 */
+	void joinEdges(rebvio::types::EdgeMap::SharedPtr& _map);
+
+	/**
+	 * \brief Returns the index of the next keyline along the direction of the current keyline (perpendicular to its gradient)
+	 * \param _map Edge map
+	 * \param _x Integer x coordinate of the current keyline
+	 * \param _y Integer y coordinate of the current keyline
+	 * \param _idx Index of the current keyline
+	 * \return Index of the next keyline
+	 */
+	int nextKeylineIdx(rebvio::types::EdgeMap::SharedPtr& _map, int _x, int _y, int _idx);
+
+	/**
+	 * \brief Auto-threshold calculation based on the histogram of DoG values
+	 * \param _map Edge map
+	 */
+	void tuneThreshold(rebvio::types::EdgeMap::SharedPtr _map);
+
+private:
+	EdgeDetectorConfigSharedPtr config_;  //!< Configuration parameters
+	int keylines_count_;                  //!< Current number of detected keylines in current image
+	cv::Mat keylines_mask_;               //!< Image mask containing the keyline IDs (-1 if no keyline)
+
+	rebvio::Camera::SharedPtr camera_;    //!< Camera Device
+	rebvio::ScaleSpace scale_space_;      //!< Scale space for edge detection
+
+	types::Float auto_threshold_;         //!< Auto threshold
+	int max_image_value_;                 //!< Max input image value for auto threshold calculation
 };
 
 } /* namespace rebvio */
