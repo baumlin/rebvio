@@ -14,3 +14,8 @@ This project contains an implementation of the REBVO pipeline, it is a reimpleme
 - OpenCV3
 - TooN
 - Lapack
+
+### Content
+- TooN: Git Submodule linking to the TooN Version used in this project
+- rebvio: Source code for the REBVIO library
+- ros_rebvio: ROS wrapper for the REBVIO library
