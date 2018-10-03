@@ -179,7 +179,7 @@ public:
 	 * \brief Method to estimate the translational component of the rigid transformation between the input edge map and the edge map used to build the distance field
 	 * \param _map Edge map to use for minimization with distance field (which is built with a different edge map)
 	 * \param _vel Estimated translation
-	 * \param _Rvel Estimated translation uncertainty
+	 * \param _Rvel Estimated translation covariance matrix
 	 * \return Minimization score
 	 */
 	types::Float minimizeVel(rebvio::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel);
@@ -188,23 +188,21 @@ public:
 	 * \brief Method to estimate the full rigid transform (rotation and translation) between the input edge map and the edge map used to build the distance field, using a linear approximation
 	 * \param _map Edge map to use for minimization with distance field (which is built with a different edge map)
 	 * \param _vel Prior translation estimate
-	 * \param _Wx Output information matrix
-	 * \param _Rx Inverse of output information matrix
+	 * \param _Wx State precision matrix (inverse of its covariance)
 	 * \param _X Output incremental state
 	 * \return Success of estimation (true if successful)
 	 */
-	bool extRotVel(rebvio::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Matrix6f& _Rx, rebvio::types::Vector6f& _X);
+	bool extRotVel(rebvio::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Vector6f& _X);
 
 	/**
-	 * \brief Method to correct the estimated rigid transform using the gyro prior
+	 * \brief Method to calculate the error in the gyro bias
 	 * \param _X Rigid transform that is to be bias corrected
-	 * \param _Wx Estimated and output state information matrix
-	 * \param _Gb Estimated and output bias
-	 * \param _Wb Estimated and output state information matrix
+	 * \param _Wx State precision matrix (inverse of covariance matrix)
+	 * \param _Wb Bias state precision matrix (inverse of covariance matrix)
 	 * \param _Rg Gyro measurement covariance matrix
 	 * \param _Rb Gyro bias covariance matrix
 	 */
-	void correctBias(rebvio::types::Vector6f& _X, rebvio::types::Matrix6f& _Wx, rebvio::types::Vector3f& _Gb,
+	rebvio::types::Vector3f gyroBiasCorrection(rebvio::types::Vector6f& _X, rebvio::types::Matrix6f& _Wx,
 									 rebvio::types::Matrix3f& _Wb, const rebvio::types::Matrix3f& _Rg, const rebvio::types::Matrix3f& _Rb);
 
 	void estimateLs4Acceleration(const rebvio::types::Vector3f& _vel, rebvio::types::Vector3f& _acc,

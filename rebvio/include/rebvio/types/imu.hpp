@@ -138,7 +138,7 @@ private:
 	unsigned int n_;                     //!< Number of IMU measurements used for integration
 	uint64_t last_ts_;                   //!< Timestamp of last measurement [us]
 	uint64_t init_ts_;                   //!< Timestamp of first measurement [us]
-	uint64_t dt_;                        //!< IMU sampling time in [us]
+	uint64_t dt_;                        //!< IMU integration interval in [us]
 
 	rebvio::types::Matrix3f R_;          //!< Interframe rotation (between first and last measurement in integration interval)
 	rebvio::types::Vector3f gyro_;       //!< Mean gyro measurement
@@ -180,19 +180,19 @@ struct ImuState {
 	rebvio::types::Matrix3f RGBias{TooN::Identity};     //!< Gyro bias covariance
 	rebvio::types::Vector3f Av{TooN::Zeros};            //!< Visual acceleration (calculated via numerical differentiation of the velocity estimate)
 	rebvio::types::Vector3f As{TooN::Zeros};            //!< Gravity-corrected acceleration
+	rebvio::types::Vector3f u_est;                      //!<
 
 	rebvio::types::Vector7f X;      //!< State of the scale filter: X = [g,a,b] with g: estimated gravity vector, a: angle scale, b: visual rotation bias vector
 	rebvio::types::Vector3f g_est;  //!< Estimated gravity state of the scale filter
 	rebvio::types::Vector3f b_est;  //!< Estimated visual rotation bias state of the scale filter
 	rebvio::types::Matrix7f P;      //!< State covariance matrix of the scale filter
-	rebvio::types::Matrix3f Qrot;   //!< Process covariance of
-	rebvio::types::Matrix3f Qg;     //!< Process covariance of gravity vector state
-	rebvio::types::Matrix3f Qbias;  //!< Process covariance of visual rotation bias vector state
-	types::Float QKp;               //!< Process variance of angle scale state
+	rebvio::types::Matrix3f Qrot;   //!< Process noise of the visual rotation
+	rebvio::types::Matrix3f Qg;     //!< Process noise of gravity vector state
+	rebvio::types::Matrix3f Qbias;  //!< Process noise of visual rotation bias vector state
+	types::Float QKp;               //!< Process noise of angle scale state
 	types::Float Rg;                //!< Observation noise of the standard gravity (norm of the gravitational acceleration)
 	rebvio::types::Matrix3f Rs;     //!< Observation noise of the gravity-corrected acceleration
 	rebvio::types::Matrix3f Rv;     //!< Observation noise of the visual acceleration
-	rebvio::types::Vector3f u_est;  //!<
 
 	bool initialized{false};
 

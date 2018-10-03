@@ -187,7 +187,7 @@ types::Float EdgeTracker::minimizeVel(rebvio::EdgeMap::SharedPtr _map, rebvio::t
 	return F;
 }
 
-bool EdgeTracker::extRotVel(rebvio::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Matrix6f& _Rx, rebvio::types::Vector6f& _X) {
+bool EdgeTracker::extRotVel(rebvio::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Vector6f& _X) {
 
 	REBVIO_TIMER_TICK();
 	int nm = 0;
@@ -245,7 +245,6 @@ bool EdgeTracker::extRotVel(rebvio::EdgeMap::SharedPtr _map, const rebvio::types
 
 	TooN::SVD<6,6,types::Float> SVDpTp(JtJ);
 	_X = SVDpTp.backsub(JtF);
-	_Rx = SVDpTp.get_pinv();
 	_Wx = JtJ;
 
 	for(int i = 0; i < _X.SizeParameter; ++i) {
@@ -255,34 +254,27 @@ bool EdgeTracker::extRotVel(rebvio::EdgeMap::SharedPtr _map, const rebvio::types
 			return false;
 		}
 	}
-	for(int row = 0; row < 6; ++row) {
-		for(int col = 0; col < 6; ++col) {
-			if(std::isnan(_Rx(row,col))) {
-				REBVIO_TIMER_TOCK();
-				std::cout<<__FILE__<<":"<<__LINE__<<": NaN in _Rx!\n";
-				return false;
-			}
-		}
-	}
 	REBVIO_TIMER_TOCK();
 
 	return true;
 }
 
 
-void EdgeTracker::correctBias(rebvio::types::Vector6f& _X, rebvio::types::Matrix6f& _Wx, rebvio::types::Vector3f& _Gb,
+types::Vector3f EdgeTracker::gyroBiasCorrection(rebvio::types::Vector6f& _X, rebvio::types::Matrix6f& _Wx,
 								 	 	 	 	 	 	  rebvio::types::Matrix3f& _Wb, const rebvio::types::Matrix3f& _Rg, const rebvio::types::Matrix3f& _Rb) {
+	types::Vector3f dgbias = TooN::Zeros;
 	const types::Matrix3f Wg = types::invert(_Rg);
 	_Wb = types::invert(types::invert(_Wb)+_Rb);
 	types::Matrix6f Wxb = _Wx;
 	types::Matrix3f iWgWb = types::invert(Wg+_Wb);
 	Wxb.slice<3,3,3,3>() += Wg*(TooN::Identity-iWgWb*Wg);
 	types::Vector6f X1 = _Wx*_X;
-	X1.slice<3,3>() += Wg*iWgWb*_Wb*_Gb;
+	X1.slice<3,3>() += Wg*iWgWb*_Wb*dgbias;
 	_X = TooN::Cholesky<6,types::Float>(Wxb).get_inverse()*X1;
-	_Gb = iWgWb*(Wg*_X.slice<3,3>()+_Wb*_Gb);
+	dgbias = iWgWb*(Wg*_X.slice<3,3>()+_Wb*dgbias);
 	_Wb = Wg+_Wb;
 	_Wx.slice<3,3,3,3>() += Wg;
+	return dgbias;
 }
 
 void EdgeTracker::estimateLs4Acceleration(const rebvio::types::Vector3f& _vel, rebvio::types::Vector3f& _acc,
@@ -356,7 +348,6 @@ types::Float EdgeTracker::estimateBias(const rebvio::types::Vector3f& _sacc, con
 																	const rebvio::types::Matrix3f& _Rf, rebvio::types::Vector3f& _g_est, rebvio::types::Vector3f& _b_est, const rebvio::types::Matrix6f& _Wvw,
 																	rebvio::types::Vector6f& _Xvw, types::Float _g_gravit) {
 
-	REBVIO_TIMER_TICK();
 	types::Matrix7f F = TooN::Zeros;
 	F(0,0) = _kP;
 	F.slice<1,1,3,3>() = _Rot.T();
@@ -415,19 +406,15 @@ types::Float EdgeTracker::estimateBias(const rebvio::types::Vector3f& _sacc, con
 
 	}
 
-	REBVIO_TIMER_TOCK();
 	return k;
 }
 
 
 void EdgeTracker::updateInverseDepth(rebvio::types::Vector3f& _vel) {
-	REBVIO_TIMER_TICK();
 	for(int idx = 0; idx < distance_field_.map()->size(); ++idx) {
 		types::KeyLine& keyline = (*distance_field_.map())[idx];
 		if(keyline.match_id >= 0) updateInverseDepthARLU(keyline,_vel);
 	}
-	REBVIO_TIMER_TOCK();
-
 }
 
 void EdgeTracker::updateInverseDepthARLU(rebvio::types::KeyLine& _keyline, rebvio::types::Vector3f& _vel) {

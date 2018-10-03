@@ -201,12 +201,10 @@ cv::Mat ScaleSpace::mag() const {
 }
 
 void ScaleSpace::build(cv::Mat& _image) {
-	REBVIO_TIMER_TICK();
 	scale_[0] = filter_[0].smooth(_image);
 	scale_[1] = filter_[1].smooth(_image);
 	calculateDoG();
 	calculateGradientMagnitude();
-	REBVIO_TIMER_TOCK();
 }
 
 void ScaleSpace::calculateDoG() {

@@ -34,12 +34,9 @@ struct RebvioConfig {
 class Rebvio {
 public:
 	struct Odometry {
-		uint64_t ts;
-		rebvio::types::Matrix3f R;
-		rebvio::types::Vector3f R_Lie;
-		rebvio::types::Matrix3f Pose;
-		rebvio::types::Vector3f Pose_Lie;
-		rebvio::types::Vector3f position;
+		uint64_t ts_us;                       //!< Timestamp in [us]
+		rebvio::types::Vector3f orientation;  //!< Orientation (lie algebra)
+		rebvio::types::Vector3f position;     //!< Position
 	};
 public:
 	Rebvio(rebvio::RebvioConfig& _params);

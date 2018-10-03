@@ -43,7 +43,6 @@ rebvio::EdgeMap::SharedPtr EdgeDetector::detect(rebvio::types::Image& _image) {
 }
 
 rebvio::EdgeMap::SharedPtr EdgeDetector::buildEdgeMap(rebvio::types::Image& _image) {
-	REBVIO_TIMER_TICK();
 
 	// Build the scale space for edge detection
 	scale_space_.build(_image.data);
@@ -116,17 +115,14 @@ rebvio::EdgeMap::SharedPtr EdgeDetector::buildEdgeMap(rebvio::types::Image& _ima
 				for(++idx; idx < idx_boundary; ++idx) {
 					keylines_mask_.at<int>(idx) = -1;
 				}
-				REBVIO_TIMER_TOCK();
 				return map;
 			}
 		}
 	}
-	REBVIO_TIMER_TOCK();
 	return map;
 }
 
 void EdgeDetector::joinEdges(rebvio::EdgeMap::SharedPtr& _map) {
-	REBVIO_TIMER_TICK();
 	for(int idx = 0; idx < _map->size(); ++idx) {
 		types::KeyLine& keyline = (*_map)[idx];
 		int x = static_cast<int>(keyline.pos[0]+0.5);
@@ -137,11 +133,9 @@ void EdgeDetector::joinEdges(rebvio::EdgeMap::SharedPtr& _map) {
 		(*_map)[id_next].id_prev = idx;
 		keyline.id_next = id_next;
 	}
-	REBVIO_TIMER_TOCK();
 }
 
 int EdgeDetector::nextKeylineIdx(rebvio::EdgeMap::SharedPtr& _map, int _x, int _y, int _idx) {
-//	REBVIO_TIMER_TICK();
 	types::Float tx = -(*_map)[_idx].gradient[1];
 	types::Float ty = (*_map)[_idx].gradient[0];
 	int idx;
@@ -166,13 +160,11 @@ int EdgeDetector::nextKeylineIdx(rebvio::EdgeMap::SharedPtr& _map, int _x, int _
 			if((idx = keylines_mask_.at<int>(_y-1,_x+1)) >= 0) { return idx; }
 		}
 	}
-//	REBVIO_TIMER_TOCK();
 	return -1;
 
 }
 
 void EdgeDetector::tuneThreshold(rebvio::EdgeMap::SharedPtr _map) {
-//	REBVIO_TIMER_TICK();
 	types::Float max_dog = (*_map)[0].gradient_norm;
 	types::Float min_dog = max_dog;
 	for(int idx = 1; idx < _map->size(); ++idx) {
@@ -191,7 +183,6 @@ void EdgeDetector::tuneThreshold(rebvio::EdgeMap::SharedPtr _map) {
 	for(int a = 0; i < config_->num_bins && a < config_->keylines_max; i++, a+=histogram[i]);
 	auto_threshold_ = max_dog - types::Float(i*(max_dog-min_dog))/types::Float(config_->num_bins);
 	_map->threshold(auto_threshold_);
-//	REBVIO_TIMER_TOCK();
 }
 
 

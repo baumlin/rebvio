@@ -81,12 +81,12 @@ int main(int argc, char** argv) {
 
 	std::function<void(rebvio::Rebvio::Odometry&)> odometry_callback = [&](rebvio::Rebvio::Odometry& _odometry) {
 		tf::Transform transform;
-		tf::Vector3 rot(_odometry.Pose_Lie[0],_odometry.Pose_Lie[1],_odometry.Pose_Lie[2]);
+		tf::Vector3 rot(_odometry.orientation[0],_odometry.orientation[1],_odometry.orientation[2]);
 		tfScalar angle = rot.length();
 		if(angle > 0.0) transform.setRotation(tf::Quaternion(rot/angle,angle));
 		else transform.setIdentity();
 		transform.setOrigin(tf::Vector3(_odometry.position[0],_odometry.position[1],_odometry.position[2]));
-		tf_broad.sendTransform(tf::StampedTransform(tf_cam2robot.inverse()*transform,ros::Time().fromNSec(_odometry.ts*1000),"map","rebvio_frame_cam"));
+		tf_broad.sendTransform(tf::StampedTransform(tf_cam2robot.inverse()*transform,ros::Time().fromNSec(_odometry.ts_us*1000),"map","rebvio_frame_cam"));
 //		tf_broad.sendTransform(tf::StampedTransform(tf_cam2robot,ros::Time().fromNSec(_odometry.ts*1000),"rebvio_frame_cam","rebvio_frame_robot"));
 	};
 	rebvio_ptr->registerOdometryCallback(odometry_callback);
