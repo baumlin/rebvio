@@ -8,7 +8,6 @@
 #ifndef REBVIO_HPP_
 #define REBVIO_HPP_
 
-#include "rebvio/rebvio_params.hpp"
 #include "rebvio/edge_detector.hpp"
 #include "rebvio/edge_tracker.hpp"
 #include "rebvio/camera.hpp"
@@ -25,6 +24,13 @@
 
 namespace rebvio {
 
+struct RebvioConfig {
+
+	// IMU
+	rebvio::types::ImuState::ImuStateConfig imu_state_config_;
+
+};
+
 class Rebvio {
 public:
 	struct Odometry {
@@ -36,7 +42,7 @@ public:
 		rebvio::types::Vector3f position;
 	};
 public:
-	Rebvio(rebvio::RebvioParams);
+	Rebvio(rebvio::RebvioConfig& _params);
 	~Rebvio();
 
 	void imageCallback(rebvio::types::Image&&);
@@ -54,15 +60,13 @@ private:
 	void stateEstimationProcess();
 
 private:
-	rebvio::RebvioParams params_;
+	rebvio::RebvioConfig config_;
 	std::thread data_acquisition_thread_;
 	std::thread state_estimation_thread_;
 	bool run_;
 
 	unsigned int num_frames_;
 
-
-	rebvio::RebvioParams config_;
 	rebvio::Camera camera_;
 	rebvio::EdgeDetector edge_detector_;
 	rebvio::EdgeTracker edge_tracker_;

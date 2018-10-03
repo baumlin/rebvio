@@ -6,7 +6,6 @@
  */
 
 #include <ros/ros.h>
-#include <rebvio/rebvio_params.hpp>
 #include <rebvio/rebvio.hpp>
 
 #include <sensor_msgs/Image.h>
@@ -20,8 +19,8 @@
 #include <TooN/TooN.h>
 
 
-rebvio::RebvioParams params;
-std::unique_ptr<rebvio::Rebvio> rebvio_ptr = std::unique_ptr<rebvio::Rebvio>(new rebvio::Rebvio(params));
+rebvio::RebvioConfig config;
+std::unique_ptr<rebvio::Rebvio> rebvio_ptr = std::unique_ptr<rebvio::Rebvio>(new rebvio::Rebvio(config));
 image_transport::Publisher edge_image_pub;
 
 

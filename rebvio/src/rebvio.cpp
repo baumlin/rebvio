@@ -17,13 +17,13 @@
 namespace rebvio {
 
 
-Rebvio::Rebvio(rebvio::RebvioParams _params) :
-		params_(_params),
+Rebvio::Rebvio(rebvio::RebvioConfig& _config) :
+		config_(_config),
 		run_(true),
 		num_frames_(0),
 		edge_detector_(std::make_shared<rebvio::Camera>(camera_)),
 		edge_tracker_(std::make_shared<rebvio::Camera>(camera_)),
-		imu_state_(_params.imu_state_config_),
+		imu_state_(config_.imu_state_config_),
 		undistorter_(std::make_shared<rebvio::Camera>(camera_))
 {
 	data_acquisition_thread_ = std::thread(&Rebvio::dataAcquisitionProcess,this);
