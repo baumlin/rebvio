@@ -111,30 +111,32 @@ private:
 
 };
 
+
+struct EdgeTrackerConfig {
+	types::Float search_range{40.0};                 //!< Pixel search range for tracking and mapping
+	types::Float reweight_distance{2.0};             //!< Reweigh error residual in Huber Loss Function
+	types::Float match_treshold{0.5};                //!< Threshold on the keyline gradient dot product
+	unsigned int min_match_threshold{0};             //!< Minimum number of consecutive matches for a keyline
+	unsigned int iterations{5};                      //!< Number of iterations for tracker
+	unsigned int global_min_matches_threshold{500};  //!< Minimum number of keyline matches for tracking and mapping
+	types::Float pixel_uncertainty{1};               //!< Pixel uncertainty for the correction step
+	types::Float quantile_cutoff{0.9};               //!< Percentile of the keylines to use for tracking
+	int quantile_num_bins{100};                      //!< Number of bins in the histogram for percentile calculation
+	types::Float reshape_q_abs{1e-4};                //!< EKF modeled absolute error on inverse depth
+
+	using SharedPtr = std::shared_ptr<EdgeTrackerConfig>;
+};
+
 class EdgeTracker {
 public:
-	struct Config {
-		types::Float search_range{40.0};                 //!< Pixel search range for tracking and mapping
-		types::Float reweight_distance{2.0};             //!< Reweigh error residual in Huber Loss Function
-		types::Float match_treshold{0.5};                //!< Threshold on the keyline gradient dot product
-		unsigned int min_match_threshold{0};             //!< Minimum number of consecutive matches for a keyline
-		unsigned int iterations{5};                      //!< Number of iterations for tracker
-		unsigned int global_min_matches_threshold{500};  //!< Minimum number of keyline matches for tracking and mapping
-		types::Float pixel_uncertainty{1};               //!< Pixel uncertainty for the correction step
-		types::Float quantile_cutoff{0.9};               //!< Percentile of the keylines to use
-		int quantile_num_bins{100};                      //!< Number of bins in the histogram for percentile calculation
-		types::Float reshape_q_abs{1e-4};                //!< EKF modeled absolute error on inverse depth
-	};
-
-public:
-	EdgeTracker(rebvio::Camera::SharedPtr);
+	EdgeTracker(rebvio::Camera::SharedPtr _camera, rebvio::EdgeTrackerConfig::SharedPtr _config = std::make_shared<rebvio::EdgeTrackerConfig>());
 	EdgeTracker() = delete;
 	~EdgeTracker();
 
 	/**
-	 * \brief Returns a reference to the configuration parameters
+	 * \brief Returns a shared pointer to the configuration parameters
 	 */
-	EdgeTracker::Config& config();
+	EdgeTrackerConfig::SharedPtr config();
 
 
 	/**
@@ -225,10 +227,10 @@ public:
 	void updateInverseDepthARLU(rebvio::types::KeyLine& _keyline, rebvio::types::Vector3f& _vel);
 
 private:
-	EdgeTracker::Config config_;             //!< Configuration parameters
-	rebvio::Camera::SharedPtr camera_;       //!< Camera device
-	rebvio::DistanceField distance_field_;   //!< Distance field for pose estimation
-	unsigned int frame_count_;               //!< Number of frame minimizations performed
+	rebvio::EdgeTrackerConfig::SharedPtr config_;   //!< Configuration parameters
+	rebvio::Camera::SharedPtr camera_;              //!< Camera device
+	rebvio::DistanceField distance_field_;          //!< Distance field for pose estimation
+	unsigned int frame_count_;                      //!< Number of frame minimizations performed
 
 
 };

@@ -241,9 +241,9 @@ void Rebvio::stateEstimationProcess() {
 		} else {
 
 			// match from the new edge map to the old one searching on the stereo line
-			klm_num = new_edge_map->directedMatch(old_edge_map,V,P_V,Rgva,num_kf_back_m,edge_tracker_.config().search_range);
+			klm_num = new_edge_map->directedMatch(old_edge_map,V,P_V,Rgva,num_kf_back_m,edge_tracker_.config()->search_range);
 
-			if(klm_num < edge_tracker_.config().global_min_matches_threshold) {
+			if(klm_num < edge_tracker_.config()->global_min_matches_threshold) {
 				P_V = TooN::Identity*std::numeric_limits<types::Float>::max();
 				V = TooN::Zeros;
 				Kp = 1.0;

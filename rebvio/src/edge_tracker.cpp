@@ -14,9 +14,10 @@
 
 namespace rebvio {
 
-EdgeTracker::EdgeTracker(rebvio::Camera::SharedPtr _camera) :
+EdgeTracker::EdgeTracker(rebvio::Camera::SharedPtr _camera, rebvio::EdgeTrackerConfig::SharedPtr _config) :
+	config_(_config),
 	camera_(_camera),
-	distance_field_(camera_->rows_,camera_->cols_,config_.search_range),
+	distance_field_(camera_->rows_,camera_->cols_,config_->search_range),
 	frame_count_(0)
 {
 
@@ -26,7 +27,7 @@ EdgeTracker::~EdgeTracker() {
 	// TODO Auto-generated destructor stub
 }
 
-EdgeTracker::Config& EdgeTracker::config() { return config_; }
+EdgeTrackerConfig::SharedPtr EdgeTracker::config() { return config_; }
 
 void EdgeTracker::buildDistanceField(rebvio::types::EdgeMap::SharedPtr _map) {
 	REBVIO_TIMER_TICK();
@@ -47,14 +48,14 @@ types::Float EdgeTracker::calculatefJ(rebvio::types::EdgeMap::SharedPtr _map, in
 	if(distance_field_[_f_inx].id < 0) {
 		_df_dx = 0.0;
 		_df_dy = 0.0;
-		return config_.search_range/_keyline.sigma_rho;
+		return config_->search_range/_keyline.sigma_rho;
 	}
 
 	const types::KeyLine& keyline = (*(distance_field_.map()))[distance_field_[_f_inx].id];
-	if(!EdgeTracker::testfk(keyline,_keyline,config_.match_treshold)) {
+	if(!EdgeTracker::testfk(keyline,_keyline,config_->match_treshold)) {
 		_df_dx = 0.0;
 		_df_dy = 0.0;
-		return config_.search_range/_keyline.sigma_rho;
+		return config_->search_range/_keyline.sigma_rho;
 	}
 
 	types::Float dx = _px-keyline.pos[0];
@@ -86,15 +87,15 @@ types::Float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio:
 		if(_map->threshold() > 0.0 && keyline.gradient_norm < _map->threshold()) continue;
 
 		// Use keyline if uncertainty is not too high or it has certain number of matches
-		if(keyline.sigma_rho > _sigma_rho_min || keyline.matches < std::min(config_.min_match_threshold,frame_count_)) continue;
+		if(keyline.sigma_rho > _sigma_rho_min || keyline.matches < std::min(config_->min_match_threshold,frame_count_)) continue;
 
 		types::Float weight = 1.0;
-		if(_residuals[idx] > config_.reweight_distance) weight = config_.reweight_distance/_residuals[idx];
+		if(_residuals[idx] > config_->reweight_distance) weight = config_->reweight_distance/_residuals[idx];
 
 		types::Float z_p = 1.0/keyline.rho+_vel[2];
 		types::Float f;
 		if(z_p <= 0.0) {
-			f = (1.0/keyline.sigma_rho)*config_.search_range*weight;
+			f = (1.0/keyline.sigma_rho)*config_->search_range*weight;
 			score += f*f;
 			continue;
 		}
@@ -110,7 +111,7 @@ types::Float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio:
 		int y = static_cast<int>(p_yc+0.5);
 
 		if(x < 1 || y < 1 || x >= camera_->cols_-1 || y >= camera_->rows_-1) {
-			f = (1.0/keyline.sigma_rho)*config_.search_range*weight;
+			f = (1.0/keyline.sigma_rho)*config_->search_range*weight;
 			score += f*f;
 			continue;
 		}
@@ -148,7 +149,7 @@ types::Float EdgeTracker::tryVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio:
 types::Float EdgeTracker::minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel) {
 
 	REBVIO_TIMER_TICK();
-	types::Float sigma_rho_min = _map->estimateQuantile(config_.quantile_cutoff,config_.quantile_num_bins);
+	types::Float sigma_rho_min = _map->estimateQuantile(config_->quantile_cutoff,config_->quantile_num_bins);
 
 	types::Matrix3f JtJ, ApI, JtJnew;
 	types::Vector3f JtF, JtFnew;
@@ -161,7 +162,7 @@ types::Float EdgeTracker::minimizeVel(rebvio::types::EdgeMap::SharedPtr _map, re
 	types::Float u = tau*TooN::max_element(JtJ).first;
 	types::Float gain;
 
-	for(int iter = 0; iter < config_.iterations; ++iter) {
+	for(int iter = 0; iter < config_->iterations; ++iter) {
 		ApI = JtJ+TooN::Identity*u;
 		h = types::invert(ApI)*(-JtF); // Solve ApI*h = -g
 		Vnew = _vel+h;
@@ -222,10 +223,10 @@ bool EdgeTracker::extRotVel(rebvio::types::EdgeMap::SharedPtr _map, const rebvio
 		Y[j] = u_x*(q_x-qt_x)+u_y*(q_y-qt_y);
 
 		types::Float dqvel = u_x*(_vel[0]*camera_->fm_-_vel[2]*keyline.match_pos_img[0]) + u_y*(_vel[1]*camera_->fm_-_vel[2]*keyline.match_pos_img[1]);
-		types::Float s_y = std::sqrt(keyline.sigma_rho*keyline.sigma_rho*dqvel*dqvel+config_.pixel_uncertainty*config_.pixel_uncertainty);
+		types::Float s_y = std::sqrt(keyline.sigma_rho*keyline.sigma_rho*dqvel*dqvel+config_->pixel_uncertainty*config_->pixel_uncertainty);
 
 		types::Float weight = 1.0;
-		if(std::fabs(Y[j]) > config_.reweight_distance) weight = std::fabs(Y[j])/config_.reweight_distance;
+		if(std::fabs(Y[j]) > config_->reweight_distance) weight = std::fabs(Y[j])/config_->reweight_distance;
 
 		Phi.slice(j,0,1,6) /= s_y*weight;
 		Y[j] /= s_y*weight;
@@ -442,10 +443,10 @@ void EdgeTracker::updateInverseDepthARLU(rebvio::types::KeyLine& _keyline, rebvi
 	types::Float rho_p = 1.0/(1.0/_keyline.rho+_vel[2]);
 	types::Float F = 1.0/(1.0+_keyline.rho*_vel[2]);
 	F *= F;
-	types::Float p_p = F*v_rho*F + config_.reshape_q_abs*config_.reshape_q_abs;
+	types::Float p_p = F*v_rho*F + config_->reshape_q_abs*config_->reshape_q_abs;
 	types::Float e = Y-H*rho_p;
 
-	types::Float S = H*p_p*H + config_.pixel_uncertainty*config_.pixel_uncertainty;
+	types::Float S = H*p_p*H + config_->pixel_uncertainty*config_->pixel_uncertainty;
 	types::Float K = p_p*H*(1.0/S);
 
 	_keyline.rho = rho_p+K*e;
