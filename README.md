@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/baumlin/rebvio.svg?branch=develop)](https://travis-ci.org/baumlin/rebvio)
+
 # Rebvio: Real-time Edge-based Visual-Inertial Odometry
 This project contains an implementation of the REBVO pipeline, it is a reimplementation of the project in https://github.com/JuanTarrio/rebvo with focus on clean code, readability and ultimatively, performance. 
 
