@@ -39,13 +39,23 @@ Rebvio::~Rebvio() {
 void Rebvio::imageCallback(rebvio::types::Image&& _image) {
 	// add image to queue
 	std::lock_guard<std::mutex> guard(image_buffer_mutex_);
-//	static types::Float K_data[9] = {camera_.fm_, 0.0, camera_.cx_, 0.0, camera_.fm_,camera_.cy_,0.0,0.0,1.0};
-//	static cv::Mat K = cv::Mat(3,3,CV_FLOAT_PRECISION,K_data);
-//	static types::Float D_data[5] = {camera_.k1_,camera_.k2_,camera_.p1_,camera_.p2_,camera_.k3_};
-//	static cv::Mat D = cv::Mat(1,5,CV_FLOAT_PRECISION,D_data);
-	cv::Mat image_undistorted;
-//	cv::undistort(_image.data,image_undistorted,K,D);
-	image_undistorted = undistorter_.undistort(_image.data);
+	cv::Mat image_undistorted, img;
+
+	// Use OpenCV undistorter class
+	static types::Float K_data[9] = {camera_.fm_, 0.0, camera_.cx_, 0.0, camera_.fm_,camera_.cy_,0.0,0.0,1.0};
+	static cv::Mat K = cv::Mat(3,3,CV_FLOAT_PRECISION,K_data);
+	static types::Float D_data[5] = {camera_.k1_,camera_.k2_,camera_.p1_,camera_.p2_,camera_.k3_};
+	static cv::Mat D = cv::Mat(1,5,CV_FLOAT_PRECISION,D_data);
+	_image.data.convertTo(img,CV_FLOAT_PRECISION,3.0);
+	REBVIO_TIMER_TICK();
+	cv::undistort(img,image_undistorted,K,D);
+
+  // Use own undistorter class
+//  cv::cvtColor(_image.data,img,cv::COLOR_GRAY2RGB);
+//	REBVIO_TIMER_TICK();
+//	image_undistorted = undistorter_.undistort(img);
+
+	REBVIO_TIMER_TOCK();
 	_image.data = image_undistorted;
 	image_buffer_.push(_image);
 }
@@ -60,6 +70,8 @@ void Rebvio::dataAcquisitionProcess() {
 	// Detect Edges and integrate inter-frame IMU measurements
 	while(run_) {
 		if(!image_buffer_.empty()) {
+			REBVIO_TIMER_TICK();
+
 			rebvio::types::Image img;
 			{
 				std::lock_guard<std::mutex> guard(image_buffer_mutex_);
@@ -82,6 +94,7 @@ void Rebvio::dataAcquisitionProcess() {
 					imu_buffer_.pop();
 				} else { break; }
 			}
+			REBVIO_TIMER_TOCK();
 		} else {
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}

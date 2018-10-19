@@ -28,10 +28,7 @@ void image_callback(const sensor_msgs::ImageConstPtr& _msg) {
 	cv_bridge::CvImagePtr cv_ptr;
 	try {
 		cv_ptr = cv_bridge::toCvCopy(_msg, sensor_msgs::image_encodings::MONO8);
-		cv::Mat image;
-//		cv_ptr->image.convertTo(image,CV_32FC1,3.0);
-		cv::cvtColor(cv_ptr->image,image,cv::COLOR_GRAY2RGB);
-		rebvio_ptr->imageCallback(rebvio::types::Image{(_msg->header.stamp.toNSec())/1000,image});
+		rebvio_ptr->imageCallback(rebvio::types::Image{(_msg->header.stamp.toNSec())/1000,cv_ptr->image});
 	}
 	catch (cv_bridge::Exception& e)
 	{
@@ -47,6 +44,7 @@ void imu_callback(const sensor_msgs::ImuConstPtr& _msg) {
 }
 
 void edge_image_callback(cv::Mat& _edge_image,rebvio::EdgeMap::SharedPtr& _map) {
+	if(edge_image_pub.getNumSubscribers() == 0) return;
 	cv::Mat image;
 	if(_edge_image.type() != CV_8UC1) {
 		double min=0,max=0;
