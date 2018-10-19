@@ -146,7 +146,7 @@ void Rebvio::stateEstimationProcess() {
 				g_init -= imu.cacc();
 				if(++num_gyro_init > config_.imu_state_config_.init_bias_frame_num) {
 					imu_state_.Bg = gyro_init/num_gyro_init;                 // initialize the gyro bias
-					imu_state_.W_Bg = types::invert(imu_state_.RGBias*1e2);  // initialize gyro bias covariance
+					imu_state_.W_Bg = types::invert(imu_state_.RGBias*1e2);  // initialize gyro bias information matrix
 					imu_state_.X.slice<1,3>() = g_init/num_gyro_init;        // initialize bias state of the scale filter
 					imu_state_.initialized = true;
 				}

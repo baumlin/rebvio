@@ -84,6 +84,7 @@ public:
 			acc_ /= types::Float(n_);
 			dgyro_ = _R_c2i.T()*(gyro_last_-gyro_init_)/dt_s();
 		}
+
 		cacc_ = acc_+(dgyro_^(-(_R_c2i.T()*_t_c2i)));
 		n_ = 0;
 		init_ts_ = 0;
@@ -175,9 +176,9 @@ struct ImuState {
 	rebvio::types::Vector3f dVgva{TooN::Zeros};         //!< Correction of inter-frame translation from accelerometer input
 	rebvio::types::Vector3f dWgva{TooN::Zeros};         //!< Correction of inter-frame rotation from accelerometer input
 	rebvio::types::Vector3f Bg{TooN::Zeros};            //!< Gyro bias
-	rebvio::types::Matrix3f W_Bg{TooN::Identity*std::numeric_limits<types::Float>::max()}; //!< Gyro bias covariance
-	rebvio::types::Matrix3f RGyro{TooN::Identity};      //!< Gyro measurement covariance
 	rebvio::types::Matrix3f RGBias{TooN::Identity};     //!< Gyro bias covariance
+	rebvio::types::Matrix3f W_Bg{TooN::Identity*std::numeric_limits<types::Float>::max()}; //!< Gyro bias information matrix
+	rebvio::types::Matrix3f RGyro{TooN::Identity};      //!< Gyro measurement covariance
 	rebvio::types::Vector3f Av{TooN::Zeros};            //!< Visual acceleration (calculated via numerical differentiation of the velocity estimate)
 	rebvio::types::Vector3f As{TooN::Zeros};            //!< Gravity-corrected acceleration
 	rebvio::types::Vector3f u_est;                      //!<

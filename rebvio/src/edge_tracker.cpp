@@ -262,18 +262,21 @@ bool EdgeTracker::extRotVel(rebvio::EdgeMap::SharedPtr _map, const rebvio::types
 
 types::Vector3f EdgeTracker::gyroBiasCorrection(rebvio::types::Vector6f& _X, rebvio::types::Matrix6f& _Wx,
 								 	 	 	 	 	 	  rebvio::types::Matrix3f& _Wb, const rebvio::types::Matrix3f& _Rg, const rebvio::types::Matrix3f& _Rb) {
+
+	// Minimizing E_gv (Equation (27) in "Realtime Edge Based Visual Inertial Odometry for MAV
+	// Teleoperation in Indoor Environments" (Tarrio & Pedre, 2017)
 	types::Vector3f dgbias = TooN::Zeros;
-	const types::Matrix3f Wg = types::invert(_Rg);
-	_Wb = types::invert(types::invert(_Wb)+_Rb);
+	const types::Matrix3f Wg = types::invert(_Rg); // gyro measurement information matrix
+	_Wb = types::invert(types::invert(_Wb)+_Rb); // update gyro bias information matrix with gyro bias measurement covariance
 	types::Matrix6f Wxb = _Wx;
 	types::Matrix3f iWgWb = types::invert(Wg+_Wb);
 	Wxb.slice<3,3,3,3>() += Wg*(TooN::Identity-iWgWb*Wg);
 	types::Vector6f X1 = _Wx*_X;
-	X1.slice<3,3>() += Wg*iWgWb*_Wb*dgbias;
+	X1.slice<3,3>() += Wg*iWgWb*_Wb*dgbias; // TODO: what is this good for? (dgbias == zero)
 	_X = TooN::Cholesky<6,types::Float>(Wxb).get_inverse()*X1;
-	dgbias = iWgWb*(Wg*_X.slice<3,3>()+_Wb*dgbias);
-	_Wb = Wg+_Wb;
-	_Wx.slice<3,3,3,3>() += Wg;
+	dgbias = iWgWb*(Wg*_X.slice<3,3>()+_Wb*dgbias); // TODO: dgbias == zero anyway?
+	_Wb = Wg+_Wb; // update bias information matrix (inverse of the covariance matrix
+	_Wx.slice<3,3,3,3>() += Wg;  // update rotation state information matrix
 	return dgbias;
 }
 
@@ -477,7 +480,8 @@ int KaGMEKBias::gaussNewton(rebvio::types::Vector7f& _X, int _iter_max, types::F
 
 bool KaGMEKBias::problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f& _JtF, const rebvio::types::Vector7f& _X) {
 
-	// Solves the weighted least-squares problem (J^T * W^T * W * J)*h = -J^T*(W^T*W)*F for h
+	// Minimizing E_corr (Equation (40) in "Realtime Edge Based Visual Inertial Odometry for MAV
+	// Teleoperation in Indoor Environments" (Tarrio & Pedre, 2017)
 	types::Float a = _X[0];
 	rebvio::types::Vector3f g = _X.slice<1,3>();
 	rebvio::types::Vector3f b = _X.slice<4,3>();
@@ -503,7 +507,18 @@ bool KaGMEKBias::problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f&
 	dFda.slice<0,3>() = -(a_s+g)*std::sin(a)-a_v*std::cos(a);
 	dFda[4] = 1.0;
 
-	// Derivative of F w.r.t. gravity and visual rotation bias
+	// Derivative of F w.r.t. gravity and visual rotation bias (x1 = [gravity vector, visual rotation bias vector]
+	// dFdx1 = | x 0 0 0 0 0 |
+	//         | 0 x 0 0 0 0 |
+	//         | 0 0 x 0 0 0 |
+	//         | x x x 0 0 0 |
+	//         | 0 0 0 0 0 0 |
+	//         | x x x x x x |
+	//         | x x x x x x |
+	//         | x x x x x x |
+	//         | 0 0 0 1 0 0 |
+	//         | 0 0 0 0 1 0 |
+	//         | 0 0 0 0 0 1 |
 	TooN::Matrix<11,6,types::Float> dFdx1 = TooN::Zeros;
 	types::Vector3f Rg = Rb*g;
 	types::Matrix3f Gx = TooN::Data( 0.0  , Rg[2], -Rg[1],
@@ -516,23 +531,67 @@ bool KaGMEKBias::problem(rebvio::types::Matrix7f& _JtJ, rebvio::types::Vector7f&
 	dFdx1.slice<8,3,3,3>() = TooN::Identity;
 
 	// Calculate the covariance matrix P
+	// P = | x x x 0 0 0 0 0 0 0 0 |
+	//     | x x x 0 0 0 0 0 0 0 0 |
+	//     | x x x 0 0 0 0 0 0 0 0 |
+	//     | 0 0 0 x 0 0 0 0 0 0 0 |
+	//     | 0 0 0 0 x x x x x x x |
+	//     | 0 0 0 0 x x x x x x x |
+	//     | 0 0 0 0 x x x x x x x |
+	//     | 0 0 0 0 x x x x x x x |
+	//     | 0 0 0 0 x x x x x x x |
+	//     | 0 0 0 0 x x x x x x x |
+	//     | 0 0 0 0 x x x x x x x |
 	types::Matrix11f P = TooN::Zeros;
 	types::Matrix3f Pz = std::sin(a)*std::sin(a)*config_.Rv+std::cos(a)*std::cos(a)*config_.Rs;
 	P.slice<0,0,3,3>() = Pz;
 	P(3,3) = config_.Rg;
 	P.slice<4,4,7,7>() = config_.Pp;
 
-	// W is the inverse of the covariance matrix P for the weighted least-squares problem
+	// W is the inverse of the covariance matrix P for the weighted least-squares problem:
+	// W = | x x x 0 0 0 0 0 0 0 0 |
+	//     | x x x 0 0 0 0 0 0 0 0 |
+	//     | x x x 0 0 0 0 0 0 0 0 |
+	//     | 0 0 0 x 0 0 0 0 0 0 0 |
+	//     | 0 0 0 0 x x x x x x x |
+	//     | 0 0 0 0 x x x x x x x |
+	//     | 0 0 0 0 x x x x x x x |
+	//     | 0 0 0 0 x x x x x x x |
+	//     | 0 0 0 0 x x x x x x x |
+	//     | 0 0 0 0 x x x x x x x |
+	//     | 0 0 0 0 x x x x x x x |
 	types::Matrix11f W = TooN::Zeros;
 	W.slice<0,0,3,3>() = TooN::Cholesky<3,types::Float>(Pz).get_inverse();
 	W(3,3) = 1.0/config_.Rg;
 	W.slice<4,4,7,7>() = TooN::Cholesky<7,types::Float>(config_.Pp).get_inverse();
 
-	// Derivative of P w.r.t. a
+	// Derivative of P w.r.t. a:
+	// dPda = | x x x 0 0 0 0 0 0 0 |
+	//        | x x x 0 0 0 0 0 0 0 |
+	//        | x x x 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
 	types::Matrix11f dPda = TooN::Zeros;
 	dPda.slice<0,0,3,3>() = 2.0*std::sin(a)*std::cos(a)*(config_.Rv-config_.Rs);
 
 	// Derivative of W w.r.t. a
+	// dWda = | x x x 0 0 0 0 0 0 0 |
+	//        | x x x 0 0 0 0 0 0 0 |
+	//        | x x x 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
+	//        | 0 0 0 0 0 0 0 0 0 0 |
 	types::Matrix11f dWda = -W*dPda*W;
 
 	_JtJ(0,0) = 0.25*F*dWda*P*dWda*F+dFda*dWda*F+dFda*W*dFda;

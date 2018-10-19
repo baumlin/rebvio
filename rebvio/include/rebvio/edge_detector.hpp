@@ -32,7 +32,7 @@ struct EdgeDetectorConfig {
 };
 
 /**
- * \class EdgeDetector
+ * \class EdgeDetector implements a Difference of Gaussians (DoG) Edge Detector.
  *
  * Edge Detection from an input grayscale image according to "Realtime edge-based visual odometry for a monocular camera" (Tarrio & Pedre, 2015), Section 2.1
  */

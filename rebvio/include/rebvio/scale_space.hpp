@@ -45,7 +45,7 @@ private:
 	void precomputeDivisors(int _d, cv::Mat& _div);
 
 public:
-	int n_;										//< Number of averagings performed to approximate the Gaussian filter
+	int n_;										//< Number of averaging operations performed to approximate the Gaussian filter
 	types::Float sigma_;			//< Standard deviation of the approximated Gaussian filter
 	types::Float sigma_true_;	//< True standard deviation of the approximated Gaussian filter due to rounding errors
 	int* widths_;							//< Array containing the widths of the box filters
@@ -53,7 +53,7 @@ public:
 };
 
 /**
- * \brief Class that implements a scale space with two scales using approximate Gaussian filtering for edge detection
+ * \brief Class that implements a scale space with two scales and one octave using approximate Gaussian filtering for DoG edge detection
  */
 class ScaleSpace {
 public:
