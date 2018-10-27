@@ -128,6 +128,7 @@ add_library(${PROJECT_NAME}
   src/undistorter.cpp
   src/scale_space.cpp
   src/edge_detector.cpp
+  src/sab_estimator.cpp
   src/edge_tracker.cpp
   src/edge_map.cpp
   src/rebvio.cpp
