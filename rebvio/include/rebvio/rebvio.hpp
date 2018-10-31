@@ -14,6 +14,7 @@
 #include "rebvio/types/image.hpp"
 #include "rebvio/types/imu.hpp"
 #include "rebvio/undistorter.hpp"
+#include "rebvio/sab_estimator.hpp"
 
 #include <mutex>
 #include <thread>
@@ -27,7 +28,7 @@ namespace rebvio {
 struct RebvioConfig {
 
 	// IMU
-	rebvio::types::ImuState::ImuStateConfig imu_state_config_;
+	rebvio::types::ImuStateConfig imu_state_config_;
 
 };
 
@@ -69,6 +70,7 @@ private:
 	rebvio::EdgeTracker edge_tracker_;
 	rebvio::types::ImuState imu_state_;
 	rebvio::Undistorter undistorter_;
+	rebvio::SABEstimator::State sab_state_;
 
 	std::queue<rebvio::types::Image> image_buffer_;
 	std::mutex image_buffer_mutex_;

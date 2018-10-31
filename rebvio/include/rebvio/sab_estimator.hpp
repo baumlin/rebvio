@@ -9,6 +9,7 @@
 #define INCLUDE_REBVIO_SAB_ESTIMATOR_HPP_
 
 #include "rebvio/types/definitions.hpp"
+#include "rebvio/types/imu.hpp"
 
 namespace rebvio {
 
@@ -29,6 +30,36 @@ public:
 						 a_v(_a_v), a_s(_a_s), G(_G), x_p(_x_p), Rv(_Rv), Rs(_Rs), Rg(_Rg), Pp(_Pp) {}
 		Config() = delete;
 	};
+
+	struct State {
+		rebvio::types::Vector7f X;      //!< State of the filter: X = [g,a,b] with g: estimated gravity vector, a: angle scale, b: visual rotation bias vector
+		rebvio::types::Vector3f g_est;  //!< Estimated gravity state of the  filter
+		rebvio::types::Vector3f b_est;  //!< Estimated visual rotation bias state of the filter
+		rebvio::types::Matrix7f P;      //!< State covariance matrix of the filter
+		rebvio::types::Matrix3f Qrot;   //!< Process noise of the visual rotation
+		rebvio::types::Matrix3f Qg;     //!< Process noise of gravity vector state
+		rebvio::types::Matrix3f Qbias;  //!< Process noise of visual rotation bias vector state
+		types::Float QKp;               //!< Process noise of angle scale state
+		types::Float Rg;                //!< Observation noise of the standard gravity (norm of the gravitational acceleration)
+		rebvio::types::Matrix3f Rs;     //!< Observation noise of the gravity-corrected acceleration
+		rebvio::types::Matrix3f Rv;     //!< Observation noise of the visual acceleration
+		State(rebvio::types::ImuStateConfig& _config) {
+			Qg = TooN::Identity*_config.g_uncertainty*_config.g_uncertainty;
+			Rg = _config.g_norm_uncertainty*_config.g_norm_uncertainty;
+			Rs = TooN::Identity*_config.acc_std_dev*_config.acc_std_dev;
+			Qbias = TooN::Identity*_config.vbias_std_dev*_config.vbias_std_dev;
+			X  = TooN::makeVector(M_PI_4,0.0,_config.g_norm,0.0,0.0,0.0,0.0);
+			P = TooN::makeVector(_config.scale_stdd_dev_init*_config.scale_stdd_dev_init,
+					100.0,
+					100.0,
+					100.0,
+					_config.vbias_std_dev*_config.vbias_std_dev*1e1,
+					_config.vbias_std_dev*_config.vbias_std_dev*1e1,
+					_config.vbias_std_dev*_config.vbias_std_dev*1e1).as_diagonal();
+
+		}
+	};
+
 
 public:
 	SABEstimator(SABEstimator::Config& _config);

@@ -150,22 +150,24 @@ private:
 	rebvio::types::Vector3f cacc_;       //!< Compensated acceleration
 };
 
+
+struct ImuStateConfig {
+	types::Float g_norm{9.81};                   //!< Measured gravity norm
+	types::Float g_uncertainty{2e-3};            //!< Process uncertainty on the g vector
+	types::Float g_norm_uncertainty{0.2e3};      //!< Uncertainty in the g norm: keep at big value
+	types::Float acc_std_dev{2.0e-3};            //!< Accelerometer noise std dev
+	types::Float gyro_std_dev{1.6968e-04};       //!< Gyro noise std dev
+	types::Float gyro_bias_std_dev{1.9393e-05};  //!< Gyro bias random walk noise
+	types::Float vbias_std_dev{1e-7};            //!< Process uncertainty in the visual bias estimation: keep lower than the gyro_bias_std_dev
+	types::Float scale_std_dev_mult{1e-2};       //!< Scale process uncertainty in relation to visual: use this parameter to tune filter response
+	types::Float scale_std_dev_max{1e-4};        //!< Max scale process uncertainty
+	types::Float scale_stdd_dev_init{1.2e-3};    //!< Initial scale process uncertainty
+	int init_bias{1};                            //!< 0: use initial guess, 1: use init_bias_frame_num frames to estimate bias
+	int init_bias_frame_num{10};                 //!< Number of frames to estimate the bias
+	rebvio::types::Vector3f init_bias_guess{TooN::makeVector(0.0188, 0.0037, 0.0776)}; //!< Initial bias guess in camera frame
+};
+
 struct ImuState {
-	struct ImuStateConfig {
-		types::Float g_norm{9.81};                   //!< Measured gravity norm
-		types::Float g_uncertainty{2e-3};            //!< Process uncertainty on the g vector
-		types::Float g_norm_uncertainty{0.2e3};      //!< Uncertainty in the g norm: keep at big value
-		types::Float acc_std_dev{2.0e-3};            //!< Accelerometer noise std dev
-		types::Float gyro_std_dev{1.6968e-04};       //!< Gyro noise std dev
-		types::Float gyro_bias_std_dev{1.9393e-05};  //!< Gyro bias random walk noise
-		types::Float vbias_std_dev{1e-7};            //!< Process uncertainty in the visual bias estimation: keep lower than the gyro_bias_std_dev
-		types::Float scale_std_dev_mult{1e-2};       //!< Scale process uncertainty in relation to visual: use this parameter to tune filter response
-		types::Float scale_std_dev_max{1e-4};        //!< Max scale process uncertainty
-		types::Float scale_stdd_dev_init{1.2e-3};    //!< Initial scale process uncertainty
-		int init_bias{1};                            //!< 0: use initial guess, 1: use init_bias_frame_num frames to estimate bias
-		int init_bias_frame_num{10};                 //!< Number of frames to estimate the bias
-		rebvio::types::Vector3f init_bias_guess{TooN::makeVector(0.0188, 0.0037, 0.0776)}; //!< Initial bias guess in camera frame
-	};
 
 	rebvio::types::Vector3f Vg{TooN::Zeros};            //!< Inter-frame translation from gyro prior
 	rebvio::types::Matrix3f P_Vg{TooN::Identity*std::numeric_limits<types::Float>::max()}; //!< Inter-frame translation Covariance from gyro prior
@@ -183,34 +185,11 @@ struct ImuState {
 	rebvio::types::Vector3f As{TooN::Zeros};            //!< Gravity-corrected acceleration
 	rebvio::types::Vector3f u_est;                      //!<
 
-	rebvio::types::Vector7f X;      //!< State of the scale filter: X = [g,a,b] with g: estimated gravity vector, a: angle scale, b: visual rotation bias vector
-	rebvio::types::Vector3f g_est;  //!< Estimated gravity state of the scale filter
-	rebvio::types::Vector3f b_est;  //!< Estimated visual rotation bias state of the scale filter
-	rebvio::types::Matrix7f P;      //!< State covariance matrix of the scale filter
-	rebvio::types::Matrix3f Qrot;   //!< Process noise of the visual rotation
-	rebvio::types::Matrix3f Qg;     //!< Process noise of gravity vector state
-	rebvio::types::Matrix3f Qbias;  //!< Process noise of visual rotation bias vector state
-	types::Float QKp;               //!< Process noise of angle scale state
-	types::Float Rg;                //!< Observation noise of the standard gravity (norm of the gravitational acceleration)
-	rebvio::types::Matrix3f Rs;     //!< Observation noise of the gravity-corrected acceleration
-	rebvio::types::Matrix3f Rv;     //!< Observation noise of the visual acceleration
 
 	bool initialized{false};
 
 	ImuState(ImuStateConfig& _config) {
 		W_Bg = types::invert(100.0*RGBias);
-		Qg = TooN::Identity*_config.g_uncertainty*_config.g_uncertainty;
-		Rg = _config.g_norm_uncertainty*_config.g_norm_uncertainty;
-		Rs = TooN::Identity*_config.acc_std_dev*_config.acc_std_dev;
-		Qbias = TooN::Identity*_config.vbias_std_dev*_config.vbias_std_dev;
-		X  = TooN::makeVector(M_PI_4,0.0,_config.g_norm,0.0,0.0,0.0,0.0);
-		P = TooN::makeVector(_config.scale_stdd_dev_init*_config.scale_stdd_dev_init,
-				100.0,
-				100.0,
-				100.0,
-				_config.vbias_std_dev*_config.vbias_std_dev*1e1,
-				_config.vbias_std_dev*_config.vbias_std_dev*1e1,
-				_config.vbias_std_dev*_config.vbias_std_dev*1e1).as_diagonal();
 		u_est  = TooN::makeVector(1.0, 0.0, 0.0);
 	}
 

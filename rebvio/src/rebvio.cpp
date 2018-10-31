@@ -24,6 +24,7 @@ Rebvio::Rebvio(rebvio::RebvioConfig& _config) :
 		edge_detector_(std::make_shared<rebvio::Camera>(camera_)),
 		edge_tracker_(std::make_shared<rebvio::Camera>(camera_)),
 		imu_state_(config_.imu_state_config_),
+		sab_state_(config_.imu_state_config_),
 		undistorter_(std::make_shared<rebvio::Camera>(camera_))
 {
 	data_acquisition_thread_ = std::thread(&Rebvio::dataAcquisitionProcess,this);
@@ -160,7 +161,7 @@ void Rebvio::stateEstimationProcess() {
 				if(++num_gyro_init > config_.imu_state_config_.init_bias_frame_num) {
 					imu_state_.Bg = gyro_init/num_gyro_init;                 // initialize the gyro bias
 					imu_state_.W_Bg = types::invert(imu_state_.RGBias*1e2);  // initialize gyro bias information matrix
-					imu_state_.X.slice<1,3>() = g_init/num_gyro_init;        // initialize bias state of the scale filter
+					sab_state_.X.slice<1,3>() = g_init/num_gyro_init;        // initialize bias state of the scale filter
 					imu_state_.initialized = true;
 				}
 			} else {
@@ -214,13 +215,13 @@ void Rebvio::stateEstimationProcess() {
 		edge_tracker_.estimateMeanAcceleration(new_edge_map->imu().cacc(),imu_state_.As,R);
 
 		types::Vector6f Xgva = Xgv; // Estimated rigid body transformation using gyro, visual, and accelerometer input
-		imu_state_.Rv = P_V/(frame_dt*frame_dt*frame_dt*frame_dt); // Observation noise of the translation state
-		imu_state_.Qrot = P_W; // Process noise of the rotation state
-		imu_state_.QKp = P_Kp; // Process noise of the angle scale state
+		sab_state_.Rv = P_V/(frame_dt*frame_dt*frame_dt*frame_dt); // Observation noise of the translation state
+		sab_state_.Qrot = P_W; // Process noise of the rotation state
+		sab_state_.QKp = P_Kp; // Process noise of the angle scale state
 		if(num_frames_ > 4+config_.imu_state_config_.init_bias_frame_num) {
-			K = edge_tracker_.estimateBias(imu_state_.As,imu_state_.Av,1.0,R,imu_state_.X,imu_state_.P,imu_state_.Qg,
-																		 imu_state_.Qrot,imu_state_.Qbias,imu_state_.QKp,imu_state_.Rg,imu_state_.Rs,imu_state_.Rv,
-																		 imu_state_.g_est,imu_state_.b_est,W_Xgv,Xgva,config_.imu_state_config_.g_norm);
+			K = edge_tracker_.estimateBias(imu_state_.As,imu_state_.Av,1.0,R,sab_state_.X,sab_state_.P,sab_state_.Qg,
+																		 sab_state_.Qrot,sab_state_.Qbias,sab_state_.QKp,sab_state_.Rg,sab_state_.Rs,sab_state_.Rv,
+																		 sab_state_.g_est,sab_state_.b_est,W_Xgv,Xgva,config_.imu_state_config_.g_norm);
 			imu_state_.dVgva = Xgva.slice<0,3>();
 			imu_state_.dWgva = Xgva.slice<3,3>();
 
@@ -272,9 +273,9 @@ void Rebvio::stateEstimationProcess() {
 		// estimate position and pose incrementally
 		if(num_frames_ > 4+config_.imu_state_config_.init_bias_frame_num) {
 			imu_state_.u_est = Rgva.T()*imu_state_.u_est;
-			imu_state_.u_est = imu_state_.u_est-(imu_state_.u_est*imu_state_.g_est)/(imu_state_.g_est*imu_state_.g_est)*imu_state_.g_est;
+			imu_state_.u_est = imu_state_.u_est-(imu_state_.u_est*sab_state_.g_est)/(sab_state_.g_est*sab_state_.g_est)*sab_state_.g_est;
 			TooN::normalize(imu_state_.u_est);
-			types::Matrix3f R1 = TooN::SO3<types::Float>(imu_state_.g_est,TooN::makeVector(0.0f,1.0f,0.0f)).get_matrix();
+			types::Matrix3f R1 = TooN::SO3<types::Float>(sab_state_.g_est,TooN::makeVector(0.0f,1.0f,0.0f)).get_matrix();
 			types::Matrix3f R2 = TooN::SO3<types::Float>(R1*imu_state_.u_est,TooN::makeVector(1.0f,0.0f,0.0f)).get_matrix();
 			R_global = R2*R1;
 			Pos += -R_global*imu_state_.Vgva*K;
