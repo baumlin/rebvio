@@ -6,6 +6,8 @@
  */
 
 #include <ros/ros.h>
+#include <rosbag/bag.h>
+#include <rosbag/view.h>
 #include <rebvio/rebvio.hpp>
 
 #include <sensor_msgs/Image.h>
@@ -66,11 +68,18 @@ void edge_image_callback(cv::Mat& _edge_image,rebvio::EdgeMap::SharedPtr& _map) 
 int main(int argc, char** argv) {
 	ros::init(argc, argv, "ros_rebvio_node");
 	ros::NodeHandle nh;
+	ros::NodeHandle nhp("~");
 	image_transport::ImageTransport it(nh);
-	image_transport::Subscriber image_sub = it.subscribe("/cam0/image_raw",20,&image_callback);
-	ros::Subscriber imu_sub = nh.subscribe("/imu0",200,&imu_callback);
 
+	std::string cam_topic, imu_topic;
+	nhp.param<std::string>("cam_topic",cam_topic,"/cam0/image_raw");
+	nh.param<std::string>("imu_topic",imu_topic,"/imu0");
+	// Setting up subscribers and publishers
+	image_transport::Subscriber image_sub = it.subscribe(cam_topic,20,&image_callback);
+	ros::Subscriber imu_sub = nh.subscribe(imu_topic,200,&imu_callback);
 	edge_image_pub = it.advertise("edge_image",20);
+
+	ROS_INFO_STREAM("Setting up "<<ros::this_node::getName()<<" Node");
 
 	tf::TransformBroadcaster tf_broad;
 	tf::Transform tf_cam2robot;
@@ -91,7 +100,37 @@ int main(int argc, char** argv) {
 
 
 	rebvio_ptr->registerEdgeImageCallback(edge_image_callback);
-	ros::spin();
+
+
+	// Run live node in case bag_file parameter is not specified
+	if(!nhp.hasParam("bag_file")) {
+		ROS_INFO_STREAM("Running with published input data.");
+		ros::spin();
+	} else {
+		std::string bag_file;
+		nhp.getParam("bag_file",bag_file);
+		ROS_INFO_STREAM("Running with rosbag file: "<<bag_file);
+		rosbag::Bag bag;
+		bag.open(bag_file,rosbag::bagmode::Read);
+		ros::Time last_realtime = ros::Time::now();
+		ros::Time last_bagtime = rosbag::View(bag).getBeginTime(); // use image timestamps to simulate realtime playback
+		for(rosbag::MessageInstance const m : rosbag::View(bag)) {
+			if(!ros::ok()) break;
+			if(m.getTopic() == imu_topic) {
+				sensor_msgs::ImuConstPtr imu_msg = m.instantiate<sensor_msgs::Imu>();
+				if(imu_msg) imu_callback(imu_msg);
+			} else if(m.getTopic() == cam_topic) {
+				sensor_msgs::ImageConstPtr image_msg = m.instantiate<sensor_msgs::Image>();
+				ros::Duration dt = (image_msg->header.stamp-last_bagtime)-(ros::Time::now()-last_realtime);
+				if(dt.toSec() > 0.0) dt.sleep();
+				if(image_msg) image_callback(image_msg);
+				last_bagtime = image_msg->header.stamp;
+				last_realtime = ros::Time::now();
+			}
+		}
+		bag.close();
+
+	}
 }
 
 

@@ -9,6 +9,7 @@ add_compile_options(-std=c++11)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  rosbag
   rebvio
   sensor_msgs
   cv_bridge
@@ -111,6 +112,7 @@ catkin_package(
 #  LIBRARIES ros_rebvio
   CATKIN_DEPENDS   
   	roscpp
+  	rosbag
   	rebvio
   	sensor_msgs
   	cv_bridge
