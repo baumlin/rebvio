@@ -7,6 +7,7 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -mtune=native")
 #set(CMAKE_REQUIRED_FLAGS "-msse2") 
 include(cmake/${PROJECT_NAME}.cmake)
 include(cmake/FindTooN.cmake)
+include(cmake/Findspdlog.cmake)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -121,6 +122,7 @@ include_directories(
  ${catkin_INCLUDE_DIRS}
  ${OpenCV_INCLUDE_DIRS}
  ${TooN_INCLUDE_DIRS}
+ ${spdlog_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
