@@ -74,6 +74,7 @@ int main(int argc, char** argv) {
 	std::string cam_topic, imu_topic;
 	nhp.param<std::string>("cam_topic",cam_topic,"/cam0/image_raw");
 	nh.param<std::string>("imu_topic",imu_topic,"/imu0");
+
 	// Setting up subscribers and publishers
 	image_transport::Subscriber image_sub = it.subscribe(cam_topic,20,&image_callback);
 	ros::Subscriber imu_sub = nh.subscribe(imu_topic,200,&imu_callback);
@@ -112,9 +113,17 @@ int main(int argc, char** argv) {
 		ROS_INFO_STREAM("Running with rosbag file: "<<bag_file);
 		rosbag::Bag bag;
 		bag.open(bag_file,rosbag::bagmode::Read);
-		ros::Time last_realtime = ros::Time::now();
 		ros::Time last_bagtime = rosbag::View(bag).getBeginTime(); // use image timestamps to simulate realtime playback
-		for(rosbag::MessageInstance const m : rosbag::View(bag)) {
+		double start_time,end_time;
+		ros::Time starttime = ros::TIME_MIN;
+		ros::Time endtime = ros::TIME_MAX;
+		if(nhp.getParam("start_time",start_time)) {
+			starttime = rosbag::View(bag).getBeginTime()+ros::Duration(start_time);
+			last_bagtime = starttime;
+		}
+		if(nhp.getParam("end_time",end_time)) endtime = rosbag::View(bag).getBeginTime()+ros::Duration(end_time);
+		ros::Time last_realtime = ros::Time::now();
+		for(rosbag::MessageInstance const m : rosbag::View(bag,starttime,endtime)) {
 			if(!ros::ok()) break;
 			if(m.getTopic() == imu_topic) {
 				sensor_msgs::ImuConstPtr imu_msg = m.instantiate<sensor_msgs::Imu>();
@@ -122,15 +131,16 @@ int main(int argc, char** argv) {
 			} else if(m.getTopic() == cam_topic) {
 				sensor_msgs::ImageConstPtr image_msg = m.instantiate<sensor_msgs::Image>();
 				ros::Duration dt = (image_msg->header.stamp-last_bagtime)-(ros::Time::now()-last_realtime);
-				if(dt.toSec() > 0.0) dt.sleep();
+				if(dt.toSec() > 0.0) ros::Duration(dt.toSec()*3.0).sleep();
 				if(image_msg) image_callback(image_msg);
 				last_bagtime = image_msg->header.stamp;
 				last_realtime = ros::Time::now();
 			}
 		}
 		bag.close();
-
 	}
+
+  edge_image_pub.shutdown(); // proper destruction of image transport publisher
 }
 
 
