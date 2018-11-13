@@ -107,7 +107,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS
-  DEPENDS OpenCV TooN
+  DEPENDS OpenCV TooN spdlog
   CFG_EXTRAS ${PROJECT_NAME}.cmake
 )
 
@@ -134,6 +134,7 @@ add_library(${PROJECT_NAME}
   src/edge_tracker.cpp
   src/edge_map.cpp
   src/rebvio.cpp
+  src/log.cpp
 )
 
 ## Add cmake target dependencies of the library

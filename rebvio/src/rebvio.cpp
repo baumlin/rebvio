@@ -7,6 +7,7 @@
 
 #include "rebvio/rebvio.hpp"
 #include "rebvio/util/timer.hpp"
+#include "rebvio/util/log.hpp"
 
 #include <opencv2/imgproc.hpp>
 
@@ -27,6 +28,7 @@ Rebvio::Rebvio(rebvio::RebvioConfig& _config) :
 		sab_state_(config_.imu_state_config_),
 		undistorter_(std::make_shared<rebvio::Camera>(camera_))
 {
+	util::Log::init();
 	data_acquisition_thread_ = std::thread(&Rebvio::dataAcquisitionProcess,this);
 	state_estimation_thread_ = std::thread(&Rebvio::stateEstimationProcess,this);
 }
@@ -69,6 +71,7 @@ void Rebvio::imuCallback(rebvio::types::Imu&& _imu) {
 
 void Rebvio::dataAcquisitionProcess() {
 	// Detect Edges and integrate inter-frame IMU measurements
+	REBVIO_INFO("Starting Data Acquisition Process..");
 	while(run_) {
 		if(!image_buffer_.empty()) {
 			REBVIO_TIMER_TICK();
@@ -103,6 +106,8 @@ void Rebvio::dataAcquisitionProcess() {
 }
 
 void Rebvio::stateEstimationProcess() {
+	REBVIO_INFO("Starting State Estimation Process..");
+
 	types::Float K = 1.0; // Scale
 
 	// estimated velocity, rotation (lie algebra) and position
@@ -139,6 +144,7 @@ void Rebvio::stateEstimationProcess() {
 				edge_map_buffer_.pop();
 				new_edge_map = edge_map_buffer_.front();
 			} else {
+				REBVIO_TIMER_TOCK();
 				continue;
 			}
 		}
