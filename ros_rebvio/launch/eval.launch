@@ -1,8 +1,10 @@
 <launch>
-  <node name="ros_rebvio_node" pkg="ros_rebvio" type="ros_rebvio_node" output="screen" clear_params="true">
-    <param name="bag_file" value="$(find ros_rebvio)/test/data/MH_03_medium.bag" type="string"/>  
+  <node name="ros_rebvio_node" pkg="ros_rebvio" type="ros_rebvio_node" output="screen" clear_params="true" >
     <param name="imu_topic" value="/imu0" type="string"/>    
     <param name="cam_topic" value="/cam0/image_raw" type="string"/>  
+    <param name="bag_file" value="$(find ros_rebvio)/test/data/MH_03_medium.bag" type="string"/>  
+    <param name="start_time" value="15" type="double"/>  
+    <param name="end_time" value="30" type="double"/>
   </node>
 
 </launch>
