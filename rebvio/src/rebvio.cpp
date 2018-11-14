@@ -292,6 +292,9 @@ void Rebvio::stateEstimationProcess() {
 		odometry.orientation = TooN::SO3<types::Float>(R_global).ln();
 		odometry.position = Pos;
 		odometryCallback(odometry);
+		REBVIO_ODOMETRY("{} {} {} {} {} {} {}",odometry.ts_us,
+				                                   odometry.orientation[0],odometry.orientation[1],odometry.orientation[2],
+																					 odometry.position[0],odometry.position[1],odometry.position[2]);
 
 
 		++num_frames_;

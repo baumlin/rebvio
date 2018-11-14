@@ -17,22 +17,30 @@ namespace util {
 class Log {
 public:
 	static void init();
-	inline static std::shared_ptr<spdlog::logger>& get() { return logger_; }
+	inline static std::shared_ptr<spdlog::logger>& getConsole() { return console_logger_; }
+	inline static std::shared_ptr<spdlog::logger>& getOdometry() { return odometry_logger_; }
 
 private:
-	static std::shared_ptr<spdlog::logger> logger_;
+	static std::shared_ptr<spdlog::logger> console_logger_;
+	static std::shared_ptr<spdlog::logger> odometry_logger_;
 };
 
 
 } /* namespace util */
 
 
-#define REBVIO_TRACE(...) rebvio::util::Log::get()->trace(__VA_ARGS__)
-#define REBVIO_DEBUG(...) rebvio::util::Log::get()->debug(__VA_ARGS__)
-#define REBVIO_INFO(...) rebvio::util::Log::get()->info(__VA_ARGS__)
-#define REBVIO_WARN(...)  rebvio::util::Log::get()->warn(__VA_ARGS__)
-#define REBVIO_ERROR(...) rebvio::util::Log::get()->error(__VA_ARGS__)
-#define REBVIO_FATAL(...) rebvio::util::Log::get()->fatal(__VA_ARGS__)
+#define REBVIO_TRACE(...) rebvio::util::Log::getConsole()->trace(__VA_ARGS__)
+#define REBVIO_DEBUG(...) rebvio::util::Log::getConsole()->debug(__VA_ARGS__)
+#define REBVIO_INFO(...) rebvio::util::Log::getConsole()->info(__VA_ARGS__)
+#define REBVIO_WARN(...)  rebvio::util::Log::getConsole()->warn(__VA_ARGS__)
+#define REBVIO_ERROR(...) rebvio::util::Log::getConsole()->error(__VA_ARGS__)
+#define REBVIO_FATAL(...) rebvio::util::Log::getConsole()->fatal(__VA_ARGS__)
+
+#ifdef TESTING
+  #define REBVIO_ODOMETRY(...) rebvio::util::Log::getOdometry()->info(__VA_ARGS__)
+#else
+  #define REBVIO_ODOMETRY(...)
+#endif
 
 } /* namespace rebvio */
 
