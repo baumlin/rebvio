@@ -108,8 +108,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS ${catkin_INCLUDE_DIRS}
-#  LIBRARIES ros_rebvio
+  INCLUDE_DIRS 
+    include
+    ${catkin_INCLUDE_DIRS}
+  LIBRARIES ros_rebvio
   CATKIN_DEPENDS   
   	roscpp
   	rosbag
@@ -119,7 +121,6 @@ catkin_package(
   	image_transport
   	tf 
   	tf_conversions
-#  DEPENDS system_lib
 )
 
 ###########
@@ -129,12 +130,13 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/ros_rebvio.cpp
+#   src/ros_rebvio.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -145,7 +147,9 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/ros_rebvio_node.cpp)
+add_executable(${PROJECT_NAME}_node 
+  src/ros_rebvio.cpp
+  src/ros_rebvio_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -200,10 +204,10 @@ install(TARGETS ${PROJECT_NAME}_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_ros_rebvio.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
+catkin_add_gtest(${PROJECT_NAME}-test test/test_ros_rebvio.cpp)
+if(TARGET ${PROJECT_NAME}-test)
+  target_link_libraries(${PROJECT_NAME}-test -pthread)
+endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)

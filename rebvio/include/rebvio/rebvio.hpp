@@ -40,7 +40,7 @@ public:
 		rebvio::types::Vector3f position;     //!< Position
 	};
 public:
-	Rebvio(rebvio::RebvioConfig& _params);
+	Rebvio(rebvio::RebvioConfig&& _params);
 	~Rebvio();
 
 	void imageCallback(rebvio::types::Image&&);

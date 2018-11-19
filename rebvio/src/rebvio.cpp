@@ -18,7 +18,7 @@
 namespace rebvio {
 
 
-Rebvio::Rebvio(rebvio::RebvioConfig& _config) :
+Rebvio::Rebvio(rebvio::RebvioConfig&& _config) :
 		config_(_config),
 		run_(true),
 		num_frames_(0),
