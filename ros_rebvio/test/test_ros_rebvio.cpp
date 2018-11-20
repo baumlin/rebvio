@@ -23,7 +23,6 @@ TEST(RegressionTest, testOdometry) {
 
 	std::string bag_file;
 	nhp.getParam("bag_file",bag_file);
-	std::cerr<<"bag_file: "<<bag_file<<std::endl;
 	rebvio.run(bag_file);
 
 	std::string odometry_file;
