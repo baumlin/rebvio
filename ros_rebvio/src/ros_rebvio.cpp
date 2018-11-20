@@ -115,7 +115,7 @@ bool RosRebvio::run(std::string _bag_file) {
 			} else if(m.getTopic() == cam_topic_) {
 				sensor_msgs::ImageConstPtr image_msg = m.instantiate<sensor_msgs::Image>();
 				ros::Duration dt = (image_msg->header.stamp-last_bagtime)-(ros::Time::now()-last_realtime);
-				if(dt.toSec() > 0.0) ros::Duration(dt.toSec()*2.0).sleep();
+				if(dt.toSec() > 0.0) ros::Duration(dt.toSec()*5.0).sleep();
 				if(image_msg) imageCallback(image_msg);
 				last_bagtime = image_msg->header.stamp;
 				last_realtime = ros::Time::now();
