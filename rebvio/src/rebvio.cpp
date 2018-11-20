@@ -133,7 +133,6 @@ void Rebvio::stateEstimationProcess() {
 
 
 	while(run_) {
-		REBVIO_TIMER_TICK();
 
 		// access newest and old edge map
 		rebvio::EdgeMap::SharedPtr new_edge_map, old_edge_map;
@@ -144,10 +143,10 @@ void Rebvio::stateEstimationProcess() {
 				edge_map_buffer_.pop();
 				new_edge_map = edge_map_buffer_.front();
 			} else {
-				REBVIO_TIMER_TOCK();
 				continue;
 			}
 		}
+		REBVIO_TIMER_TICK();
 
 		int klm_num = 0, num_kf_fow_m = 0, num_kf_back_m = 0;
 		P_V = TooN::Identity*std::numeric_limits<types::Float>::max();

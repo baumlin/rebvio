@@ -205,7 +205,6 @@ install(TARGETS ${PROJECT_NAME}_node
 
 ## Add gtest based cpp test target and link libraries
 if(CATKIN_ENABLE_TESTING)
-#  find_package(rostest REQUIRED)
   catkin_add_gtest(${PROJECT_NAME}-test test/test_ros_rebvio.cpp src/ros_rebvio.cpp)
   target_link_libraries(${PROJECT_NAME}-test -pthread ${catkin_LIBRARIES} )
 endif()

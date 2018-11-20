@@ -202,8 +202,8 @@ install(DIRECTORY include/${PROJECT_NAME}/
 #############
 
 ## Add gtest based cpp test target and link libraries
-catkin_add_gtest(${PROJECT_NAME}-test test/test_rebvio.cpp)
-if(TARGET ${PROJECT_NAME}-test)
+if(CATKIN_ENABLE_TESTING)
+  catkin_add_gtest(${PROJECT_NAME}-test test/test_rebvio.cpp)
   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME} -pthread)
 endif()
 

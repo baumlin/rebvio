@@ -23,13 +23,10 @@ TEST(RegressionTest, testOdometry) {
 	rebvio.registerOdometryCallback(odometry_cb);
 
 	std::string package_path = ros::package::getPath("ros_rebvio");
-	std::cerr<<package_path<<std::endl;
 	std::string bag_file = package_path+"/test/data/MH_03_medium_test_15s-30s.bag";
-//	nhp.getParam("bag_file",bag_file);
 	rebvio.run(bag_file);
 
 	std::string odometry_file = package_path+"/test/data/MH_03_medium_test_15s-30s_odometry.txt";
-//	nhp.getParam("odometry_file",odometry_file);
 	std::ifstream file(odometry_file);
   std::string line;
   int i = 0;
@@ -49,8 +46,9 @@ TEST(RegressionTest, testOdometry) {
 
 
 int main(int argc, char** argv) {
+	ros::init(argc,argv,"RosRebvioTest");
 	testing::InitGoogleTest(&argc,argv);
-	ros::init(argc,argv,"test_ros_rebvio");
-	ros::NodeHandle nh;
-	return RUN_ALL_TESTS();
+	auto res = RUN_ALL_TESTS();
+	ros::shutdown();
+	return res;
 }
