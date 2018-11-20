@@ -57,7 +57,9 @@
   <depend>image_transport</depend>
   <depend>tf</depend>
   <depend>tf_conversions</depend>
+  <test_depend>rostest</test_depend>
 
+  
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

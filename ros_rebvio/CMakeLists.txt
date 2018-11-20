@@ -204,9 +204,10 @@ install(TARGETS ${PROJECT_NAME}_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-catkin_add_gtest(${PROJECT_NAME}-test test/test_ros_rebvio.cpp)
-if(TARGET ${PROJECT_NAME}-test)
-  target_link_libraries(${PROJECT_NAME}-test -pthread)
+if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
+  add_rostest_gtest(${PROJECT_NAME}-test test/${PROJECT_NAME}-test.test test/test_ros_rebvio.cpp src/ros_rebvio.cpp)
+  target_link_libraries(${PROJECT_NAME}-test -pthread ${catkin_LIBRARIES} )
 endif()
 
 ## Add folders to be run by python nosetests

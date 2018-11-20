@@ -84,6 +84,10 @@ void RosRebvio::imuCallback(const sensor_msgs::ImuConstPtr& _msg) {
 		TooN::makeVector((rebvio::types::Float)_msg->linear_acceleration.x,(rebvio::types::Float)_msg->linear_acceleration.y,(rebvio::types::Float)_msg->linear_acceleration.z)});
 }
 
+void RosRebvio::registerOdometryCallback(std::function<void(rebvio::Rebvio::Odometry&)> _cb) {
+  rebvio_.registerOdometryCallback(_cb);
+}
+
 bool RosRebvio::run(std::string _bag_file) {
 	// Run live node in case bag_file parameter is not specified
 	if(_bag_file.empty()) {
@@ -118,6 +122,7 @@ bool RosRebvio::run(std::string _bag_file) {
 			}
 		}
 		bag.close();
+		ROS_INFO_STREAM("Finished rosbag playback.");
 	}
 	return true;
 }

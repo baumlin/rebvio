@@ -25,6 +25,8 @@ public:
 
 	bool run(std::string _bag_file = "");
 
+	void registerOdometryCallback(std::function<void(rebvio::Rebvio::Odometry&)>);
+
 private:
 	void imageCallback(const sensor_msgs::ImageConstPtr& _msg);
 	void imuCallback(const sensor_msgs::ImuConstPtr& _msg);

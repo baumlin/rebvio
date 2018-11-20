@@ -1,0 +1,9 @@
+<launch>
+  <test test-name="test_ros_rebvio_node" pkg="ros_rebvio" type="ros_rebvio-test" clear_params="true" >
+    <param name="imu_topic" value="/imu0" type="string"/>    
+    <param name="cam_topic" value="/cam0/image_raw" type="string"/>  
+    <param name="bag_file" value="$(find ros_rebvio)/test/data/MH_03_medium_test_15s-30s.bag" type="string"/>  
+    <param name="odometry_file" value="$(find ros_rebvio)/test/data/MH_03_medium_test_15s-30s_odometry.txt" type="string"/>
+  </test>
+
+</launch>
