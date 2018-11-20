@@ -2,6 +2,7 @@
 #include "ros_rebvio/ros_rebvio.hpp"
 
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <functional>
 #include <fstream>
 
@@ -21,12 +22,14 @@ TEST(RegressionTest, testOdometry) {
 	};
 	rebvio.registerOdometryCallback(odometry_cb);
 
-	std::string bag_file;
-	nhp.getParam("bag_file",bag_file);
+	std::string package_path = ros::package::getPath("ros_rebvio");
+	std::cerr<<package_path<<std::endl;
+	std::string bag_file = package_path+"/test/data/MH_03_medium_test_15s-30s.bag";
+//	nhp.getParam("bag_file",bag_file);
 	rebvio.run(bag_file);
 
-	std::string odometry_file;
-	nhp.getParam("odometry_file",odometry_file);
+	std::string odometry_file = package_path+"/test/data/MH_03_medium_test_15s-30s_odometry.txt";
+//	nhp.getParam("odometry_file",odometry_file);
 	std::ifstream file(odometry_file);
   std::string line;
   int i = 0;
