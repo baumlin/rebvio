@@ -16,19 +16,19 @@ namespace rebvio {
 namespace util {
 
 #ifdef TIMER
-	#define REBVIO_TIMER_TICK()\
-		static rebvio::util::Timer timer(__PRETTY_FUNCTION__); \
-		timer.tick();
+  #define REBVIO_TIMER_TICK()\
+    static rebvio::util::Timer timer(__PRETTY_FUNCTION__); \
+    timer.tick();
 	#define REBVIO_NAMED_TIMER_TICK(NAME)\
-		static rebvio::util::Timer timer_##NAME(#NAME);\
-		timer_##NAME.tick();
-	#define REBVIO_TIMER_TOCK() timer.tock();
-	#define REBVIO_NAMED_TIMER_TOCK(NAME) timer_##NAME.tock();
+    static rebvio::util::Timer timer_##NAME(#NAME);\
+    timer_##NAME.tick();
+  #define REBVIO_TIMER_TOCK() timer.tock();
+  #define REBVIO_NAMED_TIMER_TOCK(NAME) timer_##NAME.tock();
 #else
-#define REBVIO_TIMER_TICK()
-#define REBVIO_TIMER_TOCK()
-#define REBVIO_NAMED_TIMER_TICK(NAME)
-#define REBVIO_NAMED_TIMER_TOCK(NAME)
+  #define REBVIO_TIMER_TICK()
+  #define REBVIO_TIMER_TOCK()
+  #define REBVIO_NAMED_TIMER_TICK(NAME)
+  #define REBVIO_NAMED_TIMER_TOCK(NAME)
 #endif
 
 /*! \class Timer

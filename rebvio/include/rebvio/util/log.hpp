@@ -14,15 +14,40 @@
 namespace rebvio {
 namespace util {
 
+/*! \class Log
+ *  \brief Logger class to write logging messages to the console or to file.
+ *
+ *  There are different severity levels (trace, debug, info, warn, error, and fatal). To write a log message to the console,
+ *  use the logger macros according to the desired severity level, e.g.:
+ *
+ *  REBVIO_INFO("This is a message with int i={} and float f={:.{}f}",0,3.14,1);
+ *
+ *  This will print the message: This is a message with int i=0 and float f=3.1
+ *  Note that the float precision can be set using the :.{}f syntax and the desired precision (1 in the example) as argument.
+ *
+ *  To print the odometry output (in camera coordinate frame) to a file (yyyy-mm-dd_hh-mm-ss_rebvio_odometry.txt), set the
+ *  preprocessor flag -DTESTING=ON. The file is saved to the current working directory.
+ */
+
 class Log {
 public:
+	/*
+	 * Initialize the logger properties (formats, output file, etc.).
+	 */
 	static void init();
+	/*
+	 * Return the Console Logger
+	 */
 	inline static std::shared_ptr<spdlog::logger>& getConsole() { return console_logger_; }
+
+	/*
+	 * Return the Odometry File Logger
+	 */
 	inline static std::shared_ptr<spdlog::logger>& getOdometry() { return odometry_logger_; }
 
 private:
-	static std::shared_ptr<spdlog::logger> console_logger_;
-	static std::shared_ptr<spdlog::logger> odometry_logger_;
+	static std::shared_ptr<spdlog::logger> console_logger_;  //!< Console Logger
+	static std::shared_ptr<spdlog::logger> odometry_logger_; //!< Odometry File Logger
 };
 
 
