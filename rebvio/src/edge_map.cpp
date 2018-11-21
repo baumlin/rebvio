@@ -56,7 +56,6 @@ types::Float EdgeMap::estimateQuantile(types::Float _percentile, int _num_bins) 
 }
 
 void EdgeMap::rotateKeylines(const rebvio::types::Matrix3f& _R){
-	REBVIO_TIMER_TICK();
 	for(rebvio::types::KeyLine& keyline : keylines_) {
 		types::Vector3f q = _R*TooN::makeVector(keyline.pos_img[0]/camera_->fm_,keyline.pos_img[1]/camera_->fm_,1.0);
 		if(fabs(q[2]) > 0.0) {
@@ -69,11 +68,9 @@ void EdgeMap::rotateKeylines(const rebvio::types::Matrix3f& _R){
 		keyline.gradient[0] = q[0];
 		keyline.gradient[1] = q[1];
 	}
-	REBVIO_TIMER_TOCK();
 }
 
 int EdgeMap::forwardMatch(std::shared_ptr<rebvio::EdgeMap> _map) {
-	REBVIO_TIMER_TICK();
 	unsigned int num_matches = 0;
 //	char count[_map->size()] = {0};
 	int nm = 0;
@@ -98,7 +95,6 @@ int EdgeMap::forwardMatch(std::shared_ptr<rebvio::EdgeMap> _map) {
 		++num_matches;
 	}
 	_map->matches_ = num_matches;
-	REBVIO_TIMER_TOCK();
 	return num_matches;
 }
 
@@ -222,7 +218,6 @@ int EdgeMap::directedMatch(std::shared_ptr<rebvio::EdgeMap> _map, const rebvio::
 }
 
 int EdgeMap::regularize1Iter() {
-	REBVIO_TIMER_TICK();
 	int r_num = 0;
 	types::Float r[size()];
 	types::Float s[size()];
@@ -260,7 +255,6 @@ int EdgeMap::regularize1Iter() {
 			keylines_[idx].sigma_rho = s[idx];
 		}
 	}
-	REBVIO_TIMER_TOCK();
 	return r_num;
 }
 
