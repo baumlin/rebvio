@@ -25,8 +25,7 @@ Rebvio::Rebvio(rebvio::RebvioConfig&& _config) :
 		edge_detector_(std::make_shared<rebvio::Camera>(camera_)),
 		edge_tracker_(std::make_shared<rebvio::Camera>(camera_)),
 		imu_state_(config_.imu_state_config_),
-		sab_state_(config_.imu_state_config_),
-		undistorter_(std::make_shared<rebvio::Camera>(camera_))
+		sab_state_(config_.imu_state_config_)
 {
 	util::Log::init();
 	data_acquisition_thread_ = std::thread(&Rebvio::dataAcquisitionProcess,this);
@@ -52,12 +51,6 @@ void Rebvio::imageCallback(rebvio::types::Image&& _image) {
 	_image.data.convertTo(img,CV_FLOAT_PRECISION,3.0);
 	REBVIO_TIMER_TICK();
 	cv::undistort(img,image_undistorted,K,D);
-
-  // Use own undistorter class
-//  cv::cvtColor(_image.data,img,cv::COLOR_GRAY2RGB);
-//	REBVIO_TIMER_TICK();
-//	image_undistorted = undistorter_.undistort(img);
-
 	REBVIO_TIMER_TOCK();
 	_image.data = image_undistorted;
 	image_buffer_.push(_image);
