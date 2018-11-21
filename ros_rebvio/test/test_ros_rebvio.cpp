@@ -31,6 +31,7 @@ TEST(RegressionTest, testOdometry) {
   std::string line;
   int i = 0;
   while(std::getline(file,line)) {
+  	if(i >= odometry_result.size()) break;
   	std::istringstream iss(line);
   	std::vector<std::string> odometry{std::istream_iterator<std::string>{iss},std::istream_iterator<std::string>{}};
   	EXPECT_EQ(std::stoull(odometry[0]),odometry_result[i].ts_us);
