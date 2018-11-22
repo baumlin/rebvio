@@ -27,6 +27,8 @@ using Matrix6f = TooN::Matrix<6,6,types::Float>;
 using Matrix7f = TooN::Matrix<7,7,types::Float>;
 using Matrix11f = TooN::Matrix<11,11,types::Float>;
 
+using Point2Df = TooN::Vector<2,types::Float>;
+using Point3Df = TooN::Vector<3,types::Float>;
 
 /**
  * Inverts a 3x3 Matrix (not available as basic functionality in TooN)
