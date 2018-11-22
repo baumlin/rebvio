@@ -18,10 +18,13 @@ constexpr types::Float RHO_MAX=20.0;
 constexpr types::Float RHO_MIN=1e-3;
 constexpr types::Float RHO_INIT=1.0;
 
+/**
+ * \brief Struct holding a keyline primitive
+ */
 struct KeyLine {
-	Vector2f pos;                       //!< Subpixel keyline position in pixel coordinates (origin in upper left corner)
-	Vector2f pos_img;                   //!< Keyline position in image coordinates (origin at principal point)
-	Vector2f match_pos_img;             //!< Position of matched keyline in image coordinates
+	Point2Df pos;                       //!< Subpixel keyline position in pixel coordinates (origin in upper left corner)
+	Point2Df pos_img;                   //!< Keyline position in image coordinates (origin at principal point)
+	Point2Df match_pos_img;             //!< Position of matched keyline in image coordinates
 	Vector2f gradient;                  //!< Keyline gradient
 	Vector2f match_gradient;            //!< Gradient of matched keyline
 	types::Float gradient_norm;         //!< Norm of keyline gradient
@@ -36,7 +39,7 @@ struct KeyLine {
 	int match_id_keyframe;              //!< ID of the matching keyline in the last keyframe
 	unsigned int matches;               //!< Number of consecutive matches
 	KeyLine() = delete;
-	KeyLine(Vector2f& _pos, Vector2f& _gradient, Vector2f&& _pos_img) :
+	KeyLine(Point2Df& _pos, Vector2f& _gradient, Point2Df&& _pos_img) :
 		pos(_pos),
 		pos_img(_pos_img),
 		match_pos_img(_pos_img),

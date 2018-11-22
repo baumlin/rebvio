@@ -106,7 +106,7 @@ rebvio::EdgeMap::SharedPtr EdgeDetector::buildEdgeMap(rebvio::types::Image& _ima
 
 			if(gradient[0]*gradient[0]+gradient[1]*gradient[1] < gradient_threshold_squared) continue;
 
-			types::Vector2f position = TooN::makeVector(types::Float(col)+xs,types::Float(row)+ys);
+			types::Point2Df position = TooN::makeVector(types::Float(col)+xs,types::Float(row)+ys);
 			map->keylines().emplace_back(types::KeyLine(position,gradient,TooN::makeVector(position[0]-camera_->cx_,position[1]-camera_->cy_)));
 			km_ptr[col] = keylines_count_;
 			map->mask().emplace(idx,keylines_count_);
