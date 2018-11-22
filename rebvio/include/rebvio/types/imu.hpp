@@ -19,7 +19,7 @@ namespace rebvio {
 namespace types {
 
 /**
- * \brief Struct holding a IMU measurement
+ * \brief Struct holding a stamped IMU measurement
  */
 struct Imu {
 	uint64_t ts;                    //!< Timestamp in [us]

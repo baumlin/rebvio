@@ -13,6 +13,9 @@
 namespace rebvio {
 namespace types {
 
+/**
+ * \brief Struct holding a stamped Image measurement
+ */
 struct Image {
 	uint64_t ts_us;	//!< Timestamp in [us]
 	cv::Mat data;		//!< Image Data
