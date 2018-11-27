@@ -18,32 +18,51 @@
 
 namespace rebvio {
 
+/**
+ * \class ROS Wrapper class for Rebvio. Provides the data interfaces for image and imu input, and odometry output.
+ */
 class RosRebvio {
 public:
 	RosRebvio(ros::NodeHandle _nh);
+	RosRebvio() = delete;
 	~RosRebvio();
 
-	bool run(std::string _bag_file = "");
+	/*
+	 * \brief Run the Rebvio pipeline
+	 * \param _bag_file If a valid path to a bag file is specified, the pipeline uses the bag file for data input.
+	 * \param _speed If _bag_file is specified, _speed determines the playback speed.
+	 * \return True if bag file is finished processing or ROS spin has successfully shut down.
+	 */
+	bool run(std::string _bag_file = "", float _speed = 1.0);
 
+	/*
+	 * \brief Register a callback function to process the odometry output
+	 */
 	void registerOdometryCallback(std::function<void(rebvio::Rebvio::Odometry&)>);
 
 private:
+	/*
+	 * \brief Image callback function binded to image subscriber
+	 */
 	void imageCallback(const sensor_msgs::ImageConstPtr& _msg);
+	/*
+	 * \brief IMU callback function binded to IMU subscriber
+	 */
 	void imuCallback(const sensor_msgs::ImuConstPtr& _msg);
 
 private:
-	rebvio::Rebvio rebvio_;
+	rebvio::Rebvio rebvio_;                     //!< Rebvio instance
 
-	ros::NodeHandle nh_;
-	image_transport::ImageTransport it_;
-	image_transport::Publisher edge_image_pub_;
-	tf::Transform tf_cam2robot_;
-	tf::TransformBroadcaster tf_broadcaster_;
-	image_transport::Subscriber image_sub_;
-	ros::Subscriber imu_sub_;
+	ros::NodeHandle nh_;                        //!< ROS Node Handle
+	image_transport::ImageTransport it_;        //!< Image Transport for image publishing
+	image_transport::Publisher edge_image_pub_; //!< Edge Image Publisher
+	tf::Transform tf_cam2robot_;                //!< Coordinate System transformation from robot to camera frame
+	tf::TransformBroadcaster tf_broadcaster_;   //!< Transform broadcaster for odometry output
+	image_transport::Subscriber image_sub_;     //!< Input image Subscriber
+	ros::Subscriber imu_sub_;                   //!< Input IMU Subscriber
 
-	std::string imu_topic_;
-	std::string cam_topic_;
+	std::string imu_topic_;                     //!< Name of IMU topic
+	std::string cam_topic_;                     //!< Name of image topic
 };
 
 } /* namespace rebvio */

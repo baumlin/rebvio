@@ -88,7 +88,7 @@ void RosRebvio::registerOdometryCallback(std::function<void(rebvio::Rebvio::Odom
   rebvio_.registerOdometryCallback(_cb);
 }
 
-bool RosRebvio::run(std::string _bag_file) {
+bool RosRebvio::run(std::string _bag_file, float _speed) {
 	// Run live node in case bag_file parameter is not specified
 	if(_bag_file.empty()) {
 		ROS_INFO_STREAM("Running with published input data.");
@@ -115,7 +115,7 @@ bool RosRebvio::run(std::string _bag_file) {
 			} else if(m.getTopic() == cam_topic_) {
 				sensor_msgs::ImageConstPtr image_msg = m.instantiate<sensor_msgs::Image>();
 				ros::Duration dt = (image_msg->header.stamp-last_bagtime)-(ros::Time::now()-last_realtime);
-				if(dt.toSec() > 0.0) ros::Duration(dt.toSec()*1.5).sleep();
+				if(dt.toSec() > 0.0) ros::Duration(dt.toSec()*_speed).sleep();
 				if(image_msg) imageCallback(image_msg);
 				last_bagtime = image_msg->header.stamp;
 				last_realtime = ros::Time::now();

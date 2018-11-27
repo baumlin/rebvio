@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
 
 	std::string bag_file;
 	nhp.getParam("bag_file",bag_file);
-	rebvio.run(bag_file);
+	rebvio.run(bag_file,1.5);
 }
 
 
