@@ -279,7 +279,7 @@ void Rebvio::stateEstimationProcess() {
 			Pos += -R_global*imu_state_.Vgva*K;
 		}
 
-		Odometry odometry;
+		types::Odometry odometry;
 		odometry.ts_us = new_edge_map->ts_us();
 		odometry.orientation = TooN::SO3<types::Float>(R_global).ln();
 		odometry.position = Pos;
@@ -310,12 +310,12 @@ void Rebvio::registerEdgeImageCallback(std::function<void(cv::Mat&,rebvio::EdgeM
 	edge_image_callbacks_.push_back(_cb);
 }
 
-void Rebvio::odometryCallback(rebvio::Rebvio::Odometry& _odometry) {
+void Rebvio::odometryCallback(rebvio::types::Odometry& _odometry) {
 	for(auto& cb : odometry_callbacks_)
 		cb(_odometry);
 }
 
-void Rebvio::registerOdometryCallback(std::function<void(rebvio::Rebvio::Odometry&)> _cb) {
+void Rebvio::registerOdometryCallback(std::function<void(rebvio::types::Odometry&)> _cb) {
 	odometry_callbacks_.push_back(_cb);
 }
 

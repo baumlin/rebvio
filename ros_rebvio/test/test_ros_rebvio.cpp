@@ -16,8 +16,8 @@ TEST(RegressionTest, testOdometry) {
 
 	rebvio::RosRebvio rebvio(nhp);
 
-	std::vector<rebvio::Rebvio::Odometry> odometry_result;
-	std::function<void(rebvio::Rebvio::Odometry&)> odometry_cb = [&](rebvio::Rebvio::Odometry& _msg) {
+	std::vector<rebvio::types::Odometry> odometry_result;
+	std::function<void(rebvio::types::Odometry&)> odometry_cb = [&](rebvio::types::Odometry& _msg) {
     odometry_result.push_back(_msg);
 	};
 	rebvio.registerOdometryCallback(odometry_cb);

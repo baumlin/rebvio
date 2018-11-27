@@ -11,8 +11,10 @@
 #include "rebvio/edge_detector.hpp"
 #include "rebvio/edge_tracker.hpp"
 #include "rebvio/camera.hpp"
+#include "rebvio/types/definitions.hpp"
 #include "rebvio/types/image.hpp"
 #include "rebvio/types/imu.hpp"
+#include "rebvio/types/odometry.hpp"
 #include "rebvio/sab_estimator.hpp"
 
 #include <mutex>
@@ -32,12 +34,7 @@ struct RebvioConfig {
 };
 
 class Rebvio {
-public:
-	struct Odometry {
-		uint64_t ts_us;                       //!< Timestamp in [us]
-		rebvio::types::Vector3f orientation;  //!< Orientation (lie algebra)
-		rebvio::types::Vector3f position;     //!< Position
-	};
+
 public:
 	Rebvio(rebvio::RebvioConfig&& _params);
 	~Rebvio();
@@ -46,13 +43,13 @@ public:
 	void imuCallback(rebvio::types::Imu&&);
 
 	void registerEdgeImageCallback(std::function<void(cv::Mat&,rebvio::EdgeMap::SharedPtr&)>);
-	void registerOdometryCallback(std::function<void(rebvio::Rebvio::Odometry&)>);
+	void registerOdometryCallback(std::function<void(rebvio::types::Odometry&)>);
 
 
 private:
 	void dataAcquisitionProcess();
 	void edgeImageCallback(cv::Mat&,rebvio::EdgeMap::SharedPtr&);
-	void odometryCallback(rebvio::Rebvio::Odometry&);
+	void odometryCallback(rebvio::types::Odometry&);
 
 	void stateEstimationProcess();
 
@@ -78,7 +75,7 @@ private:
 	std::mutex edge_map_buffer_mutex_;
 
 	std::vector<std::function<void(cv::Mat&,rebvio::EdgeMap::SharedPtr&)>> edge_image_callbacks_;
-	std::vector<std::function<void(rebvio::Rebvio::Odometry&)>> odometry_callbacks_;
+	std::vector<std::function<void(rebvio::types::Odometry&)>> odometry_callbacks_;
 };
 
 } /* namespace rebvio */

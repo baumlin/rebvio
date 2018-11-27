@@ -9,6 +9,7 @@
 #define ROS_REBVIO_INCLUDE_ROS_REBVIO_ROS_REBVIO_HPP_
 
 #include "rebvio/rebvio.hpp"
+#include "rebvio/types/odometry.hpp"
 
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
@@ -38,7 +39,7 @@ public:
 	/*
 	 * \brief Register a callback function to process the odometry output
 	 */
-	void registerOdometryCallback(std::function<void(rebvio::Rebvio::Odometry&)>);
+	void registerOdometryCallback(std::function<void(rebvio::types::Odometry&)>);
 
 private:
 	/*

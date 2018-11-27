@@ -18,7 +18,7 @@ RosRebvio::RosRebvio(ros::NodeHandle _nh) : nh_(_nh), it_(_nh), rebvio_(rebvio::
 	tf_cam2robot_.setRotation(tf::Quaternion(tf::Vector3(1,0,0),M_PI/2));
 
 
-	std::function<void(rebvio::Rebvio::Odometry& _odometry)> odometryCallback = [&](rebvio::Rebvio::Odometry& _odometry) {
+	std::function<void(rebvio::types::Odometry& _odometry)> odometryCallback = [&](rebvio::types::Odometry& _odometry) {
 		tf::Transform transform;
 		tf::Vector3 rot(_odometry.orientation[0],_odometry.orientation[1],_odometry.orientation[2]);
 		tfScalar angle = rot.length();
@@ -84,7 +84,7 @@ void RosRebvio::imuCallback(const sensor_msgs::ImuConstPtr& _msg) {
 		TooN::makeVector((rebvio::types::Float)_msg->linear_acceleration.x,(rebvio::types::Float)_msg->linear_acceleration.y,(rebvio::types::Float)_msg->linear_acceleration.z)});
 }
 
-void RosRebvio::registerOdometryCallback(std::function<void(rebvio::Rebvio::Odometry&)> _cb) {
+void RosRebvio::registerOdometryCallback(std::function<void(rebvio::types::Odometry&)> _cb) {
   rebvio_.registerOdometryCallback(_cb);
 }
 
