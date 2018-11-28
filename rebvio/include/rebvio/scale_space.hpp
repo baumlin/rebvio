@@ -26,30 +26,30 @@ public:
 	~FastGaussian();
 
 	/**
-	 * Smooth the input image using the Fast Almost-Gaussian Method
+	 * \brief Smooth the input image using the Fast Almost-Gaussian Method
 	 */
 	cv::Mat smooth(cv::Mat&);
 
 private:
 	/**
-	 * Method to calculate the integral image of an input image
+	 * \brief Method to calculate the integral image of an input image
 	 */
 	cv::Mat createIntegralImage(cv::Mat&);
 	/**
-	 * Method to calculate the average
+	 * \brief Method to calculate the average
 	 */
 	cv::Mat average(cv::Mat&, int, cv::Mat&);
 	/**
-	 * Method to pre-calculate the divisor at each pixel (number of pixels in the boxfilter) for usage in the average() method
+	 * \brief Method to pre-calculate the divisor at each pixel (number of pixels in the boxfilter) for usage in the average() method
 	 */
 	void precomputeDivisors(int _d, cv::Mat& _div);
 
 public:
-	int n_;										//< Number of averaging operations performed to approximate the Gaussian filter
-	types::Float sigma_;			//< Standard deviation of the approximated Gaussian filter
-	types::Float sigma_true_;	//< True standard deviation of the approximated Gaussian filter due to rounding errors
-	int* widths_;							//< Array containing the widths of the box filters
-	cv::Mat* divisors_;				//< Pre-computed divisors used by the average() method
+	int n_;										//!< Number of averaging operations performed to approximate the Gaussian filter
+	types::Float sigma_;			//!< Standard deviation of the approximated Gaussian filter
+	types::Float sigma_true_;	//!< True standard deviation of the approximated Gaussian filter due to rounding errors
+	int* widths_;							//!< Array containing the widths of the box filters
+	cv::Mat* divisors_;				//!< Pre-computed divisors used by the average() method
 };
 
 /**
@@ -88,11 +88,11 @@ private:
 	void calculateGradientMagnitude();
 
 private:
-	rebvio::Camera::SharedPtr camera_;	//< Camera Device
-	rebvio::FastGaussian filter_[2];		//< Array of Gaussian filters with different (increasing) sigmas used to calculate the different scales for the DoG
-	cv::Mat scale_[2];									//< Array of the scale images (with increasing sigmas) calculated using the Gaussian filters
-	cv::Mat dog_;												//< The Difference of Gaussians calculated using the different scale images
-	cv::Mat gradient_mag_; 							//< Squared gradient magnitude of the first scale image
+	rebvio::Camera::SharedPtr camera_;	//!< Camera Device
+	rebvio::FastGaussian filter_[2];		//!< Array of Gaussian filters with different (increasing) sigmas used to calculate the different scales for the DoG
+	cv::Mat scale_[2];									//!< Array of the scale images (with increasing sigmas) calculated using the Gaussian filters
+	cv::Mat dog_;												//!< The Difference of Gaussians calculated using the different scale images
+	cv::Mat gradient_mag_; 							//!< Squared gradient magnitude of the first scale image
 };
 
 } /* namespace rebvio */

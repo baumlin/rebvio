@@ -32,7 +32,7 @@ public:
 	}
 
 	/**
-	 * Reset distance field, i.e. set all id's = -1 (and leave other quantities) and (re-)build
+	 * \brief Reset distance field, i.e. set all id's = -1 (and leave other quantities) and (re-)build
 	 */
 	void build(rebvio::EdgeMap::SharedPtr _map) {
 
@@ -71,11 +71,11 @@ private:
 	}
 
 private:
-	DistanceFieldElement* field_;
-	unsigned int rows_;
-	unsigned int cols_;
-	types::Float search_range_;
-	rebvio::EdgeMap::SharedPtr map_;
+	DistanceFieldElement* field_;         //!< Distance Field
+	unsigned int rows_;                   //!< Rows of Distance Field
+	unsigned int cols_;                   //!< Cols of Distance Field
+	types::Float search_range_;           //!< Search Range [pix] within Distance Field
+	rebvio::EdgeMap::SharedPtr map_;      //!< Pointer to the Edge Map used to create the Distance Field
 };
 
 

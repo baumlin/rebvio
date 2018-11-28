@@ -109,6 +109,13 @@ public:
 	int regularize1Iter();
 
 private:
+
+	/**
+	 * \brief Convert row-col pixel position into linear index (Row-Major with origin in upper left corner)
+	 * \param _row y-coordinate of position
+	 * \param _col x-coordinate of position
+	 * \return Linear index according to input position
+	 */
 	inline int getIndex(types::Float _row, types::Float _col) {
 		int row = std::round(_row);
 		int col = std::round(_col);

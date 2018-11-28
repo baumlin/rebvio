@@ -14,7 +14,7 @@
 namespace rebvio {
 namespace util {
 
-/*! \class Log
+/** \class Log
  *  \brief Logger class to write logging messages to the console or to file.
  *
  *  There are different severity levels (trace, debug, info, warn, error, and fatal). To write a log message to the console,
@@ -31,17 +31,18 @@ namespace util {
 
 class Log {
 public:
-	/*
-	 * Initialize the logger properties (formats, output file, etc.).
+	/**
+	 * \brief Initialize the logger properties (formats, output file, etc.).
 	 */
 	static void init();
-	/*
-	 * Return the Console Logger
+
+	/**
+	 * \brief Return the Console Logger
 	 */
 	inline static std::shared_ptr<spdlog::logger>& getConsole() { return console_logger_; }
 
-	/*
-	 * Return the Odometry File Logger
+	/**
+	 * \brief Return the Odometry File Logger
 	 */
 	inline static std::shared_ptr<spdlog::logger>& getOdometry() { return odometry_logger_; }
 

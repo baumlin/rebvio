@@ -14,7 +14,7 @@
 namespace rebvio {
 
 /**
- * @brief Class that implements the Pinhole camera model with extrinsics to an optional IMU
+ * \brief Class that implements the Pinhole camera model with extrinsics to an optional IMU
  */
 class Camera {
 public:

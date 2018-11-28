@@ -13,12 +13,15 @@
 
 namespace rebvio {
 
+/**
+ * \class Scale-Attitude-Bias Estimator
+ */
 class SABEstimator {
 public:
 	struct Config {
 		rebvio::types::Vector3f a_v;    //!< Visual acceleration
 		rebvio::types::Vector3f a_s;    //!< Gravity-corrected acceleration
-		rebvio::types::Float G;                 //!< Standard gravity (norm of gravitational acceleration)
+		rebvio::types::Float G;         //!< Standard gravity (norm of gravitational acceleration)
 		rebvio::types::Vector7f x_p;    //!< Prior filter state
 		rebvio::types::Matrix7f Pp;     //!< Prior filter state covariance
 		rebvio::types::Matrix3f Rv;     //!< Observation noise of visual acceleration
@@ -72,7 +75,7 @@ private:
 	inline rebvio::types::Float saturate(rebvio::types::Float _t, rebvio::types::Float _limit);
 
 private:
-	SABEstimator::Config config_;
+	SABEstimator::Config config_;  //!< Estimator Configuration
 
 
 
