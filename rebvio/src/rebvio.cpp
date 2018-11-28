@@ -18,14 +18,13 @@
 namespace rebvio {
 
 
-Rebvio::Rebvio(rebvio::RebvioConfig&& _config) :
+Rebvio::Rebvio(rebvio::RebvioConfig& _config) :
 		config_(_config),
 		run_(true),
 		num_frames_(0),
-		edge_detector_(std::make_shared<rebvio::Camera>(camera_)),
-		edge_tracker_(std::make_shared<rebvio::Camera>(camera_)),
-		imu_state_(config_.imu_state_config_),
-		sab_state_(config_.imu_state_config_)
+		edge_detector_(std::make_shared<rebvio::Camera>(camera_),std::make_shared<rebvio::EdgeDetectorConfig>(_config.edge_detector)),
+		edge_tracker_(std::make_shared<rebvio::Camera>(camera_),std::make_shared<rebvio::EdgeTrackerConfig>(_config.edge_tracker)),
+		sab_state_(config_.imu_state)
 {
 	util::Log::init();
 	data_acquisition_thread_ = std::thread(&Rebvio::dataAcquisitionProcess,this);
@@ -153,10 +152,10 @@ void Rebvio::stateEstimationProcess() {
 		// initialize imu state if frame received
 		const rebvio::types::IntegratedImu& imu = new_edge_map->imu().get(camera_.getRc2i(),camera_.getTc2i());
 		if(!imu_state_.initialized && num_frames_ > 0) {
-			if(config_.imu_state_config_.init_bias > 0) {
+			if(config_.imu_state.init_bias > 0) {
 				gyro_init += imu.gyro()*imu.dt_s();
 				g_init -= imu.cacc();
-				if(++num_gyro_init > config_.imu_state_config_.init_bias_frame_num) {
+				if(++num_gyro_init > config_.imu_state.init_bias_frame_num) {
 					imu_state_.Bg = gyro_init/num_gyro_init;                 // initialize the gyro bias
 					imu_state_.W_Bg = types::invert(imu_state_.RGBias*1e2);  // initialize gyro bias information matrix
 					sab_state_.X.slice<1,3>() = g_init/num_gyro_init;        // initialize bias state of the scale filter
@@ -164,7 +163,7 @@ void Rebvio::stateEstimationProcess() {
 				}
 			} else {
 				imu_state_.initialized = true;
-				imu_state_.Bg = config_.imu_state_config_.init_bias_guess*imu.dt_s();
+				imu_state_.Bg = config_.imu_state.init_bias_guess*imu.dt_s();
 			}
 		}
 
@@ -192,8 +191,8 @@ void Rebvio::stateEstimationProcess() {
 		types::Float frame_dt = types::Float(new_edge_map->ts_us()-old_edge_map->ts_us())/1000000.0; // convert to [s]
 
 		// correct gyro bias
-		imu_state_.RGBias = TooN::Identity*config_.imu_state_config_.gyro_bias_std_dev*config_.imu_state_config_.gyro_bias_std_dev*frame_dt*frame_dt;  // Observation noise of the gyro bias
-		imu_state_.RGyro = TooN::Identity*config_.imu_state_config_.gyro_std_dev*config_.imu_state_config_.gyro_std_dev*frame_dt*frame_dt;             // Observation noise of the gyro measurements
+		imu_state_.RGBias = TooN::Identity*config_.imu_state.gyro_bias_std_dev*config_.imu_state.gyro_bias_std_dev*frame_dt*frame_dt;  // Observation noise of the gyro bias
+		imu_state_.RGyro = TooN::Identity*config_.imu_state.gyro_std_dev*config_.imu_state.gyro_std_dev*frame_dt*frame_dt;             // Observation noise of the gyro measurements
 		imu_state_.Bg += edge_tracker_.gyroBiasCorrection(Xgv,W_Xgv,imu_state_.W_Bg,imu_state_.RGyro,imu_state_.RGBias);
 		imu_state_.dVgv = Xgv.slice<0,3>();  // Rigid body translation correction from visual input
 		imu_state_.dWgv = Xgv.slice<3,3>();  // Rigid body rotation correction from visual input
@@ -216,10 +215,10 @@ void Rebvio::stateEstimationProcess() {
 		sab_state_.Rv = P_V/(frame_dt*frame_dt*frame_dt*frame_dt); // Observation noise of the translation state
 		sab_state_.Qrot = P_W; // Process noise of the rotation state
 		sab_state_.QKp = P_Kp; // Process noise of the angle scale state
-		if(num_frames_ > 4+config_.imu_state_config_.init_bias_frame_num) {
+		if(num_frames_ > 4+config_.imu_state.init_bias_frame_num) {
 			K = edge_tracker_.estimateBias(imu_state_.As,imu_state_.Av,1.0,R,sab_state_.X,sab_state_.P,sab_state_.Qg,
 																		 sab_state_.Qrot,sab_state_.Qbias,sab_state_.QKp,sab_state_.Rg,sab_state_.Rs,sab_state_.Rv,
-																		 sab_state_.g_est,sab_state_.b_est,W_Xgv,Xgva,config_.imu_state_config_.g_norm);
+																		 sab_state_.g_est,sab_state_.b_est,W_Xgv,Xgva,config_.imu_state.g_norm);
 			imu_state_.dVgva = Xgva.slice<0,3>();
 			imu_state_.dWgva = Xgva.slice<3,3>();
 
@@ -269,7 +268,7 @@ void Rebvio::stateEstimationProcess() {
 			}
 		}
 		// estimate position and pose incrementally
-		if(num_frames_ > 4+config_.imu_state_config_.init_bias_frame_num) {
+		if(num_frames_ > 4+config_.imu_state.init_bias_frame_num) {
 			imu_state_.u_est = Rgva.T()*imu_state_.u_est;
 			imu_state_.u_est = imu_state_.u_est-(imu_state_.u_est*sab_state_.g_est)/(sab_state_.g_est*sab_state_.g_est)*sab_state_.g_est;
 			TooN::normalize(imu_state_.u_est);

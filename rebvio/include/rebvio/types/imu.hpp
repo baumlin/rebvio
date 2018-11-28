@@ -168,31 +168,22 @@ struct ImuStateConfig {
 };
 
 struct ImuState {
-
-	rebvio::types::Vector3f Vg{TooN::Zeros};            //!< Inter-frame translation from gyro prior
+	rebvio::types::Vector3f Vg{TooN::Zeros};                        //!< Inter-frame translation from gyro prior
 	rebvio::types::Matrix3f P_Vg{TooN::Identity*std::numeric_limits<types::Float>::max()}; //!< Inter-frame translation Covariance from gyro prior
-	rebvio::types::Vector3f Vgv{TooN::Zeros};						//!< Inter-frame translation from gyro and visual input
-	rebvio::types::Vector3f dVgv{TooN::Zeros};          //!< Correction of inter-frame translation from visual input
-	rebvio::types::Vector3f dWgv{TooN::Zeros};          //!< Correction of inter-frame rotation from visual input
-	rebvio::types::Vector3f Vgva{TooN::Zeros};          //!< Inter-frame translation from gyro, visual and accelerometer input
-	rebvio::types::Vector3f dVgva{TooN::Zeros};         //!< Correction of inter-frame translation from accelerometer input
-	rebvio::types::Vector3f dWgva{TooN::Zeros};         //!< Correction of inter-frame rotation from accelerometer input
-	rebvio::types::Vector3f Bg{TooN::Zeros};            //!< Gyro bias
-	rebvio::types::Matrix3f RGBias{TooN::Identity};     //!< Gyro bias covariance
-	rebvio::types::Matrix3f W_Bg{TooN::Identity*std::numeric_limits<types::Float>::max()}; //!< Gyro bias information matrix
-	rebvio::types::Matrix3f RGyro{TooN::Identity};      //!< Gyro measurement covariance
-	rebvio::types::Vector3f Av{TooN::Zeros};            //!< Visual acceleration (calculated via numerical differentiation of the velocity estimate)
-	rebvio::types::Vector3f As{TooN::Zeros};            //!< Gravity-corrected acceleration
-	rebvio::types::Vector3f u_est;                      //!<
-
-
-	bool initialized{false};
-
-	ImuState(ImuStateConfig& _config) {
-		W_Bg = types::invert(100.0*RGBias);
-		u_est  = TooN::makeVector(1.0, 0.0, 0.0);
-	}
-
+	rebvio::types::Vector3f Vgv{TooN::Zeros};				            		//!< Inter-frame translation from gyro and visual input
+	rebvio::types::Vector3f dVgv{TooN::Zeros};                      //!< Correction of inter-frame translation from visual input
+	rebvio::types::Vector3f dWgv{TooN::Zeros};                      //!< Correction of inter-frame rotation from visual input
+	rebvio::types::Vector3f Vgva{TooN::Zeros};                      //!< Inter-frame translation from gyro, visual and accelerometer input
+	rebvio::types::Vector3f dVgva{TooN::Zeros};                     //!< Correction of inter-frame translation from accelerometer input
+	rebvio::types::Vector3f dWgva{TooN::Zeros};                     //!< Correction of inter-frame rotation from accelerometer input
+	rebvio::types::Vector3f Bg{TooN::Zeros};                        //!< Gyro bias
+	rebvio::types::Matrix3f RGBias{TooN::Identity};                 //!< Gyro bias covariance
+	rebvio::types::Matrix3f W_Bg{types::invert(100.0*RGBias)};       //!< Gyro bias information matrix
+	rebvio::types::Matrix3f RGyro{TooN::Identity};                  //!< Gyro measurement covariance
+	rebvio::types::Vector3f Av{TooN::Zeros};                        //!< Visual acceleration (calculated via numerical differentiation of the velocity estimate)
+	rebvio::types::Vector3f As{TooN::Zeros};                        //!< Gravity-corrected acceleration
+	rebvio::types::Vector3f u_est{TooN::makeVector(1.0, 0.0, 0.0)}; //!<
+	bool initialized{false};                                        //!< State Initialization Flag
 };
 
 } /* namespace types */

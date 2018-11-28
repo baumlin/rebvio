@@ -12,7 +12,7 @@
 
 namespace rebvio {
 
-RosRebvio::RosRebvio(ros::NodeHandle _nh) : nh_(_nh), it_(_nh), rebvio_(rebvio::RebvioConfig()) {
+RosRebvio::RosRebvio(ros::NodeHandle _nh, rebvio::RosRebvioConfig _config) : nh_(_nh), it_(_nh), rebvio_(_config.config) {
 
 	tf_cam2robot_.setOrigin(tf::Vector3(0,0,0));
 	tf_cam2robot_.setRotation(tf::Quaternion(tf::Vector3(1,0,0),M_PI/2));
@@ -26,12 +26,10 @@ RosRebvio::RosRebvio(ros::NodeHandle _nh) : nh_(_nh), it_(_nh), rebvio_(rebvio::
 		else transform.setIdentity();
 		transform.setOrigin(tf::Vector3(_odometry.position[0],_odometry.position[1],_odometry.position[2]));
 		tf_broadcaster_.sendTransform(tf::StampedTransform(tf_cam2robot_.inverse()*transform,ros::Time().fromNSec(_odometry.ts_us*1000),"map","rebvio_frame_cam"));
-	//		tf_broad.sendTransform(tf::StampedTransform(tf_cam2robot,ros::Time().fromNSec(_odometry.ts*1000),"rebvio_frame_cam","rebvio_frame_robot"));
 	};
 	rebvio_.registerOdometryCallback(odometryCallback);
 
 	std::function<void(cv::Mat& _edge_image,rebvio::EdgeMap::SharedPtr& _map)> edgeImageCallback = [&](cv::Mat& _edge_image,rebvio::EdgeMap::SharedPtr& _map) {
-//	void RosRebvio::edgeImageCallback(cv::Mat& _edge_image,rebvio::EdgeMap::SharedPtr& _map) {
 		if(edge_image_pub_.getNumSubscribers() == 0) return;
 		cv::Mat image;
 		if(_edge_image.type() != CV_8UC1) {
@@ -52,8 +50,8 @@ RosRebvio::RosRebvio(ros::NodeHandle _nh) : nh_(_nh), it_(_nh), rebvio_(rebvio::
 	};
 	rebvio_.registerEdgeImageCallback(edgeImageCallback);
 
-	nh_.param<std::string>("cam_topic",cam_topic_,"/cam0/image_raw");
-	nh_.param<std::string>("imu_topic",imu_topic_,"/imu0");
+	nh_.param<std::string>("cam_topic",cam_topic_,_config.cam_topic);
+	nh_.param<std::string>("imu_topic",imu_topic_,_config.imu_topic);
 
 	image_sub_ = it_.subscribe(cam_topic_,20,&rebvio::RosRebvio::imageCallback,this);
 	imu_sub_ = nh_.subscribe(imu_topic_,200,&rebvio::RosRebvio::imuCallback,this);

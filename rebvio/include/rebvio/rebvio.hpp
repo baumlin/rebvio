@@ -27,10 +27,9 @@
 namespace rebvio {
 
 struct RebvioConfig {
-
-	// IMU
-	rebvio::types::ImuStateConfig imu_state_config_;
-
+	rebvio::EdgeDetectorConfig edge_detector;  //!< Edge Detector Configuration
+	rebvio::EdgeTrackerConfig edge_tracker;    //!< Rebvio Core Configuration
+	rebvio::types::ImuStateConfig imu_state;   //!< IMU State Configuration
 };
 
 /**
@@ -39,7 +38,7 @@ struct RebvioConfig {
 class Rebvio {
 
 public:
-	Rebvio(rebvio::RebvioConfig&& _params);
+	Rebvio(rebvio::RebvioConfig& _config);
 	~Rebvio();
 
 	/**

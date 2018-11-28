@@ -26,7 +26,10 @@ int main(int argc, char** argv) {
 
 	ROS_INFO_STREAM("Setting up "<<ros::this_node::getName()<<" Node");
 
-	rebvio::RosRebvio rebvio(nhp);
+	rebvio::RosRebvioConfig config;
+	config.cam_topic = "/cam0/image_raw";
+	config.imu_topic = "/imu0";
+	rebvio::RosRebvio rebvio(nhp,config);
 
 	std::string bag_file;
 	nhp.getParam("bag_file",bag_file);

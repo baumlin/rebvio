@@ -19,12 +19,22 @@
 
 namespace rebvio {
 
+
+struct RosRebvioConfig {
+	rebvio::RebvioConfig config;                //!< Rebvio Configuration
+	std::string imu_topic{"/imu0"};             //!< IMU Topic Name
+	std::string cam_topic{"/cam0/image_raw"};   //!< Image Topic Name
+
+	RosRebvioConfig() : config(RebvioConfig()) {};
+};
+
 /**
  * \class ROS Wrapper class for Rebvio. Provides the data interfaces for image and imu input, and odometry output.
  */
 class RosRebvio {
+
 public:
-	RosRebvio(ros::NodeHandle _nh);
+	RosRebvio(ros::NodeHandle _nh, rebvio::RosRebvioConfig _config=rebvio::RosRebvioConfig());
 	RosRebvio() = delete;
 	~RosRebvio();
 
