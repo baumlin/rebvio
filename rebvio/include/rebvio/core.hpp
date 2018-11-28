@@ -79,7 +79,7 @@ private:
 };
 
 
-struct EdgeTrackerConfig {
+struct CoreConfig {
 	types::Float search_range{40.0};                 //!< Pixel search range for tracking and mapping
 	types::Float reweight_distance{2.0};             //!< Reweigh error residual in Huber Loss Function
 	types::Float match_treshold{0.5};                //!< Threshold on the keyline gradient dot product
@@ -91,19 +91,19 @@ struct EdgeTrackerConfig {
 	int quantile_num_bins{100};                      //!< Number of bins in the histogram for percentile calculation
 	types::Float reshape_q_abs{1e-4};                //!< EKF modeled absolute error on inverse depth
 
-	using SharedPtr = std::shared_ptr<EdgeTrackerConfig>;
+	using SharedPtr = std::shared_ptr<CoreConfig>;
 };
 
-class EdgeTracker {
+class Core {
 public:
-	EdgeTracker(rebvio::Camera::SharedPtr _camera, rebvio::EdgeTrackerConfig::SharedPtr _config = std::make_shared<rebvio::EdgeTrackerConfig>());
-	EdgeTracker() = delete;
-	~EdgeTracker();
+	Core(rebvio::Camera::SharedPtr _camera, rebvio::CoreConfig::SharedPtr _config = std::make_shared<rebvio::CoreConfig>());
+	Core() = delete;
+	~Core();
 
 	/**
 	 * \brief Returns a shared pointer to the configuration parameters
 	 */
-	EdgeTrackerConfig::SharedPtr config();
+	CoreConfig::SharedPtr config();
 
 
 	/**
@@ -192,7 +192,7 @@ public:
 	void updateInverseDepthARLU(rebvio::types::KeyLine& _keyline, rebvio::types::Vector3f& _vel);
 
 private:
-	rebvio::EdgeTrackerConfig::SharedPtr config_;   //!< Configuration parameters
+	rebvio::CoreConfig::SharedPtr config_;          //!< Configuration parameters
 	rebvio::Camera::SharedPtr camera_;              //!< Camera device
 	rebvio::DistanceField distance_field_;          //!< Distance field for pose estimation
 	unsigned int frame_count_;                      //!< Number of frame minimizations performed

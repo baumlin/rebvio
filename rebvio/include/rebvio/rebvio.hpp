@@ -9,13 +9,13 @@
 #define REBVIO_HPP_
 
 #include "rebvio/edge_detector.hpp"
-#include "rebvio/edge_tracker.hpp"
 #include "rebvio/camera.hpp"
 #include "rebvio/types/definitions.hpp"
 #include "rebvio/types/image.hpp"
 #include "rebvio/types/imu.hpp"
 #include "rebvio/types/odometry.hpp"
 #include "rebvio/sab_estimator.hpp"
+#include "rebvio/core.hpp"
 
 #include <mutex>
 #include <thread>
@@ -28,7 +28,7 @@ namespace rebvio {
 
 struct RebvioConfig {
 	rebvio::EdgeDetectorConfig edge_detector;  //!< Edge Detector Configuration
-	rebvio::EdgeTrackerConfig edge_tracker;    //!< Rebvio Core Configuration
+	rebvio::CoreConfig core;                   //!< Rebvio Core Configuration
 	rebvio::types::ImuStateConfig imu_state;   //!< IMU State Configuration
 };
 
@@ -97,7 +97,7 @@ private:
 
 	rebvio::Camera camera_;                                     //!< Camera parameters
 	rebvio::EdgeDetector edge_detector_;                        //!< Edge Detector
-	rebvio::EdgeTracker edge_tracker_;                          //!< Pose Estimator
+	rebvio::Core core_;                                         //!< Pose Estimator
 	rebvio::types::ImuState imu_state_;                         //!< Integrated IMU State
 	rebvio::SABEstimator::State sab_state_;                     //!< Scale-Attitude-Bias Estimator State
 

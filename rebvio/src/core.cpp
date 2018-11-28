@@ -5,7 +5,7 @@
  *      Author: baumlin
  */
 
-#include "rebvio/edge_tracker.hpp"
+#include <rebvio/core.hpp>
 #include "rebvio/sab_estimator.hpp"
 #include "rebvio/util/timer.hpp"
 #include <TooN/SVD.h>
@@ -15,7 +15,7 @@
 
 namespace rebvio {
 
-EdgeTracker::EdgeTracker(rebvio::Camera::SharedPtr _camera, rebvio::EdgeTrackerConfig::SharedPtr _config) :
+Core::Core(rebvio::Camera::SharedPtr _camera, rebvio::CoreConfig::SharedPtr _config) :
 	config_(_config),
 	camera_(_camera),
 	distance_field_(camera_->rows_,camera_->cols_,config_->search_range),
@@ -24,26 +24,26 @@ EdgeTracker::EdgeTracker(rebvio::Camera::SharedPtr _camera, rebvio::EdgeTrackerC
 
 }
 
-EdgeTracker::~EdgeTracker() {
+Core::~Core() {
 	// TODO Auto-generated destructor stub
 }
 
-EdgeTrackerConfig::SharedPtr EdgeTracker::config() { return config_; }
+CoreConfig::SharedPtr Core::config() { return config_; }
 
-void EdgeTracker::buildDistanceField(rebvio::EdgeMap::SharedPtr _map) {
+void Core::buildDistanceField(rebvio::EdgeMap::SharedPtr _map) {
 	REBVIO_TIMER_TICK();
 	distance_field_.build(_map);
 	REBVIO_TIMER_TOCK();
 }
 
-bool EdgeTracker::testfk(const rebvio::types::KeyLine& _keyline1, const rebvio::types::KeyLine& _keyline2, const types::Float& _similarity_threshold) {
+bool Core::testfk(const rebvio::types::KeyLine& _keyline1, const rebvio::types::KeyLine& _keyline2, const types::Float& _similarity_threshold) {
 	types::Float norm_squared = _keyline2.gradient_norm*_keyline2.gradient_norm;
 	types::Float dot_product = _keyline1.gradient[0]*_keyline2.gradient[0]+_keyline1.gradient[1]*_keyline2.gradient[1];
 	if(std::fabs(dot_product-norm_squared) > _similarity_threshold*norm_squared)	return false; // |g1*g2 - g2*g2|/(g2*g2) > threshold ?
 	return true;
 }
 
-types::Float EdgeTracker::calculatefJ(rebvio::EdgeMap::SharedPtr _map, int _f_inx, types::Float& _df_dx, types::Float& _df_dy, rebvio::types::KeyLine& _keyline,
+types::Float Core::calculatefJ(rebvio::EdgeMap::SharedPtr _map, int _f_inx, types::Float& _df_dx, types::Float& _df_dy, rebvio::types::KeyLine& _keyline,
 		const types::Float& _px, const types::Float& _py, int& _mnum, types::Float& _fi) {
 
 	if(distance_field_[_f_inx].id < 0) {
@@ -53,7 +53,7 @@ types::Float EdgeTracker::calculatefJ(rebvio::EdgeMap::SharedPtr _map, int _f_in
 	}
 
 	const types::KeyLine& keyline = (*(distance_field_.map()))[distance_field_[_f_inx].id];
-	if(!EdgeTracker::testfk(keyline,_keyline,config_->match_treshold)) {
+	if(!Core::testfk(keyline,_keyline,config_->match_treshold)) {
 		_df_dx = 0.0;
 		_df_dy = 0.0;
 		return config_->search_range/_keyline.sigma_rho;
@@ -75,7 +75,7 @@ types::Float EdgeTracker::calculatefJ(rebvio::EdgeMap::SharedPtr _map, int _f_in
 	return _fi/_keyline.sigma_rho;
 }
 
-types::Float EdgeTracker::tryVel(rebvio::EdgeMap::SharedPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
+types::Float Core::tryVel(rebvio::EdgeMap::SharedPtr _map, rebvio::types::Matrix3f& _JtJ, rebvio::types::Vector3f& _JtF, const rebvio::types::Vector3f& _vel,
 						 types::Float _sigma_rho_min, types::Float* _residuals) {
 	types::Float score = 0.0;
 	_JtJ = TooN::Zeros;
@@ -147,7 +147,7 @@ types::Float EdgeTracker::tryVel(rebvio::EdgeMap::SharedPtr _map, rebvio::types:
 	return score;
 }
 
-types::Float EdgeTracker::minimizeVel(rebvio::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel) {
+types::Float Core::minimizeVel(rebvio::EdgeMap::SharedPtr _map, rebvio::types::Vector3f& _vel, rebvio::types::Matrix3f& _Rvel) {
 
 	REBVIO_TIMER_TICK();
 	types::Float sigma_rho_min = _map->estimateQuantile(config_->quantile_cutoff,config_->quantile_num_bins);
@@ -188,7 +188,7 @@ types::Float EdgeTracker::minimizeVel(rebvio::EdgeMap::SharedPtr _map, rebvio::t
 	return F;
 }
 
-bool EdgeTracker::extRotVel(rebvio::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Vector6f& _X) {
+bool Core::extRotVel(rebvio::EdgeMap::SharedPtr _map, const rebvio::types::Vector3f& _vel, rebvio::types::Matrix6f& _Wx, rebvio::types::Vector6f& _X) {
 
 	REBVIO_TIMER_TICK();
 	int nm = 0;
@@ -261,7 +261,7 @@ bool EdgeTracker::extRotVel(rebvio::EdgeMap::SharedPtr _map, const rebvio::types
 }
 
 
-types::Vector3f EdgeTracker::gyroBiasCorrection(rebvio::types::Vector6f& _X, rebvio::types::Matrix6f& _Wx,
+types::Vector3f Core::gyroBiasCorrection(rebvio::types::Vector6f& _X, rebvio::types::Matrix6f& _Wx,
 								 	 	 	 	 	 	  rebvio::types::Matrix3f& _Wb, const rebvio::types::Matrix3f& _Rg, const rebvio::types::Matrix3f& _Rb) {
 
 	// Minimizing E_gv (Equation (27) in "Realtime Edge Based Visual Inertial Odometry for MAV
@@ -281,7 +281,7 @@ types::Vector3f EdgeTracker::gyroBiasCorrection(rebvio::types::Vector6f& _X, reb
 	return dgbias;
 }
 
-void EdgeTracker::estimateLs4Acceleration(const rebvio::types::Vector3f& _vel, rebvio::types::Vector3f& _acc,
+void Core::estimateLs4Acceleration(const rebvio::types::Vector3f& _vel, rebvio::types::Vector3f& _acc,
 														 const rebvio::types::Matrix3f& _R, types::Float _dt) {
 
 	static types::Vector3f V = TooN::Zeros;
@@ -331,7 +331,7 @@ void EdgeTracker::estimateLs4Acceleration(const rebvio::types::Vector3f& _vel, r
 	}
 }
 
-void EdgeTracker::estimateMeanAcceleration(const rebvio::types::Vector3f _sacc, rebvio::types::Vector3f& _acc, const rebvio::types::Matrix3f& _R) {
+void Core::estimateMeanAcceleration(const rebvio::types::Vector3f _sacc, rebvio::types::Vector3f& _acc, const rebvio::types::Matrix3f& _R) {
 	static types::Vector3f A = TooN::Zeros;
 	static types::Vector3f A0 = TooN::Zeros;
 	static types::Vector3f A1 = TooN::Zeros;
@@ -346,7 +346,7 @@ void EdgeTracker::estimateMeanAcceleration(const rebvio::types::Vector3f _sacc, 
 }
 
 
-types::Float EdgeTracker::estimateBias(const rebvio::types::Vector3f& _sacc, const rebvio::types::Vector3f& _facc, types::Float _kP, const rebvio::types::Matrix3f _Rot,
+types::Float Core::estimateBias(const rebvio::types::Vector3f& _sacc, const rebvio::types::Vector3f& _facc, types::Float _kP, const rebvio::types::Matrix3f _Rot,
 																	rebvio::types::Vector7f& _X, rebvio::types::Matrix7f& _P, const rebvio::types::Matrix3f& _Qg, const rebvio::types::Matrix3f& _Qrot,
                                   const rebvio::types::Matrix3f& _Qbias, types::Float _QKp, types::Float _Rg, const rebvio::types::Matrix3f& _Rs,
 																	const rebvio::types::Matrix3f& _Rf, rebvio::types::Vector3f& _g_est, rebvio::types::Vector3f& _b_est, const rebvio::types::Matrix6f& _Wvw,
@@ -414,14 +414,14 @@ types::Float EdgeTracker::estimateBias(const rebvio::types::Vector3f& _sacc, con
 }
 
 
-void EdgeTracker::updateInverseDepth(rebvio::types::Vector3f& _vel) {
+void Core::updateInverseDepth(rebvio::types::Vector3f& _vel) {
 	for(int idx = 0; idx < distance_field_.map()->size(); ++idx) {
 		types::KeyLine& keyline = (*distance_field_.map())[idx];
 		if(keyline.match_id >= 0) updateInverseDepthARLU(keyline,_vel);
 	}
 }
 
-void EdgeTracker::updateInverseDepthARLU(rebvio::types::KeyLine& _keyline, rebvio::types::Vector3f& _vel) {
+void Core::updateInverseDepthARLU(rebvio::types::KeyLine& _keyline, rebvio::types::Vector3f& _vel) {
 	types::Float qx = _keyline.pos_img[0];
 	types::Float qy = _keyline.pos_img[1];
 	types::Float q0x = _keyline.match_pos_img[0];

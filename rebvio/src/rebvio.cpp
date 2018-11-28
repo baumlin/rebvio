@@ -23,7 +23,7 @@ Rebvio::Rebvio(rebvio::RebvioConfig& _config) :
 		run_(true),
 		num_frames_(0),
 		edge_detector_(std::make_shared<rebvio::Camera>(camera_),std::make_shared<rebvio::EdgeDetectorConfig>(_config.edge_detector)),
-		edge_tracker_(std::make_shared<rebvio::Camera>(camera_),std::make_shared<rebvio::EdgeTrackerConfig>(_config.edge_tracker)),
+		core_(std::make_shared<rebvio::Camera>(camera_),std::make_shared<rebvio::CoreConfig>(_config.core)),
 		sab_state_(config_.imu_state)
 {
 	util::Log::init();
@@ -147,7 +147,7 @@ void Rebvio::stateEstimationProcess() {
 
 
 		// build auxiliary distance field from new edge map for rigid transform estimation
-		edge_tracker_.buildDistanceField(new_edge_map);
+		core_.buildDistanceField(new_edge_map);
 
 		// initialize imu state if frame received
 		const rebvio::types::IntegratedImu& imu = new_edge_map->imu().get(camera_.getRc2i(),camera_.getTc2i());
@@ -174,7 +174,7 @@ void Rebvio::stateEstimationProcess() {
 
 		imu_state_.Vg = TooN::Zeros;
 		// estimate translation and translation covariance using prior information from the gyro
-		edge_tracker_.minimizeVel(old_edge_map,imu_state_.Vg,imu_state_.P_Vg);
+		core_.minimizeVel(old_edge_map,imu_state_.Vg,imu_state_.P_Vg);
 
 		// forward keyline matching from the old (rotated) edge map to the new edge map
 		old_edge_map->forwardMatch(new_edge_map);
@@ -182,7 +182,7 @@ void Rebvio::stateEstimationProcess() {
 		// Visual rigid transformation estimation using forward matches and prior translation estimate
 		types::Vector6f Xv;                // Rigid body transformation correction from visual input
 		types::Matrix6f W_Xv;
-		edge_tracker_.extRotVel(new_edge_map,imu_state_.Vg,W_Xv,Xv);
+		core_.extRotVel(new_edge_map,imu_state_.Vg,W_Xv,Xv);
 		types::Vector6f Xgv = Xv;          // Estimated rigid transformation using gyro and visual input
 		types::Matrix6f W_Xgv = W_Xv;
 
@@ -193,7 +193,7 @@ void Rebvio::stateEstimationProcess() {
 		// correct gyro bias
 		imu_state_.RGBias = TooN::Identity*config_.imu_state.gyro_bias_std_dev*config_.imu_state.gyro_bias_std_dev*frame_dt*frame_dt;  // Observation noise of the gyro bias
 		imu_state_.RGyro = TooN::Identity*config_.imu_state.gyro_std_dev*config_.imu_state.gyro_std_dev*frame_dt*frame_dt;             // Observation noise of the gyro measurements
-		imu_state_.Bg += edge_tracker_.gyroBiasCorrection(Xgv,W_Xgv,imu_state_.W_Bg,imu_state_.RGyro,imu_state_.RGBias);
+		imu_state_.Bg += core_.gyroBiasCorrection(Xgv,W_Xgv,imu_state_.W_Bg,imu_state_.RGyro,imu_state_.RGBias);
 		imu_state_.dVgv = Xgv.slice<0,3>();  // Rigid body translation correction from visual input
 		imu_state_.dWgv = Xgv.slice<3,3>();  // Rigid body rotation correction from visual input
 
@@ -208,15 +208,15 @@ void Rebvio::stateEstimationProcess() {
 		P_W = R_Xgv.slice<3,3,3,3>();
 
 		// Mix rigid body transformation estimate (from visual and gyro input) with accelerometer using bayesian filter
-		edge_tracker_.estimateLs4Acceleration(-imu_state_.Vgv/frame_dt,imu_state_.Av,R,frame_dt);
-		edge_tracker_.estimateMeanAcceleration(new_edge_map->imu().cacc(),imu_state_.As,R);
+		core_.estimateLs4Acceleration(-imu_state_.Vgv/frame_dt,imu_state_.Av,R,frame_dt);
+		core_.estimateMeanAcceleration(new_edge_map->imu().cacc(),imu_state_.As,R);
 
 		types::Vector6f Xgva = Xgv; // Estimated rigid body transformation using gyro, visual, and accelerometer input
 		sab_state_.Rv = P_V/(frame_dt*frame_dt*frame_dt*frame_dt); // Observation noise of the translation state
 		sab_state_.Qrot = P_W; // Process noise of the rotation state
 		sab_state_.QKp = P_Kp; // Process noise of the angle scale state
 		if(num_frames_ > 4+config_.imu_state.init_bias_frame_num) {
-			K = edge_tracker_.estimateBias(imu_state_.As,imu_state_.Av,1.0,R,sab_state_.X,sab_state_.P,sab_state_.Qg,
+			K = core_.estimateBias(imu_state_.As,imu_state_.Av,1.0,R,sab_state_.X,sab_state_.P,sab_state_.Qg,
 																		 sab_state_.Qrot,sab_state_.Qbias,sab_state_.QKp,sab_state_.Rg,sab_state_.Rs,sab_state_.Rv,
 																		 sab_state_.g_est,sab_state_.b_est,W_Xgv,Xgva,config_.imu_state.g_norm);
 			imu_state_.dVgva = Xgva.slice<0,3>();
@@ -250,9 +250,9 @@ void Rebvio::stateEstimationProcess() {
 		} else {
 
 			// match from the new edge map to the old one searching on the stereo line
-			klm_num = new_edge_map->directedMatch(old_edge_map,V,P_V,Rgva,num_kf_back_m,edge_tracker_.config()->search_range);
+			klm_num = new_edge_map->directedMatch(old_edge_map,V,P_V,Rgva,num_kf_back_m,core_.config()->search_range);
 
-			if(klm_num < edge_tracker_.config()->global_min_matches_threshold) {
+			if(klm_num < core_.config()->global_min_matches_threshold) {
 				P_V = TooN::Identity*std::numeric_limits<types::Float>::max();
 				V = TooN::Zeros;
 				P_Kp = std::numeric_limits<types::Float>::max();
@@ -264,7 +264,7 @@ void Rebvio::stateEstimationProcess() {
 				new_edge_map->regularize1Iter();
 
 				// improve depth using kalman filter
-				edge_tracker_.updateInverseDepth(V);
+				core_.updateInverseDepth(V);
 			}
 		}
 		// estimate position and pose incrementally
