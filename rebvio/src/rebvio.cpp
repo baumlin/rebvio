@@ -9,8 +9,6 @@
 #include "rebvio/util/timer.hpp"
 #include "rebvio/util/log.hpp"
 
-#include <opencv2/imgproc.hpp>
-
 #include <TooN/so3.h>
 #include <TooN/Cholesky.h>
 
@@ -40,18 +38,12 @@ Rebvio::~Rebvio() {
 void Rebvio::imageCallback(rebvio::types::Image&& _image) {
 	// add image to queue
 	std::lock_guard<std::mutex> guard(image_buffer_mutex_);
-	cv::Mat image_undistorted, img;
+	cv::Mat img;
 
-	// Use OpenCV undistorter class
-	static types::Float K_data[9] = {camera_.fm_, 0.0, camera_.cx_, 0.0, camera_.fm_,camera_.cy_,0.0,0.0,1.0};
-	static cv::Mat K = cv::Mat(3,3,CV_FLOAT_PRECISION,K_data);
-	static types::Float D_data[5] = {camera_.k1_,camera_.k2_,camera_.p1_,camera_.p2_,camera_.k3_};
-	static cv::Mat D = cv::Mat(1,5,CV_FLOAT_PRECISION,D_data);
 	_image.data.convertTo(img,CV_FLOAT_PRECISION,3.0);
 	REBVIO_TIMER_TICK();
-	cv::undistort(img,image_undistorted,K,D);
+	_image.data = camera_.undistort(img);
 	REBVIO_TIMER_TOCK();
-	_image.data = image_undistorted;
 	image_buffer_.push(_image);
 }
 

@@ -8,8 +8,9 @@
 #ifndef INCLUDE_REBVIO_CAMERA_HPP_
 #define INCLUDE_REBVIO_CAMERA_HPP_
 
-#include <rebvio/types/definitions.hpp>
+#include "rebvio/types/definitions.hpp"
 #include <memory>
+#include <opencv2/imgproc.hpp>
 
 namespace rebvio {
 
@@ -35,6 +36,8 @@ public:
 		rows_(480),
 		cols_(752)
 		{
+		  K_ = (cv::Mat_<types::Float>(3,3) << fm_,0.0,cx_,0.0,fm_,cy_,0.0,0.0,1.0);
+		  D_ = (cv::Mat_<types::Float>(1,5) << k1_,k2_,p1_,p2_,k3_);
 			R_c2i_ = TooN::Data(0.0148655429818, -0.999880929698, 0.00414029679422,
           0.999557249008, 0.0149672133247, 0.025715529948,
           -0.0257744366974, 0.00375618835797, 0.999660727178);
@@ -46,6 +49,12 @@ public:
 
 	const rebvio::types::Vector3f& getTc2i() const {
 		return t_c2i_;
+	}
+
+	cv::Mat undistort(cv::Mat& _in) {
+		cv::Mat out;
+		cv::undistort(_in,out,K_,D_);
+		return out;
 	}
 
 public:
@@ -63,6 +72,8 @@ public:
 	unsigned int cols_;	//!< x-resolution
 
 private:
+	cv::Mat K_;                     //!< Camera Matrix for OpenCV Undistortion
+	cv::Mat D_;                     //!< Distortion Parameters for OpenCV Undistortion
 	rebvio::types::Matrix3f R_c2i_;	//!< Rotation component of transformation from Camera to Imu frame
 	rebvio::types::Vector3f t_c2i_;	//!< Translation component of transformation from Camera to Imu frame
 };
